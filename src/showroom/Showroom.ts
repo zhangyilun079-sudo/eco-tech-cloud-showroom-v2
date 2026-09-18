@@ -95,9 +95,13 @@ export class Showroom {
       metalness: 0.02,
     }));
     const bronzeMaterial = this.keepMaterial(new MeshStandardMaterial({
-      color: '#567368',
-      roughness: 0.34,
-      metalness: 0.58,
+      color: '#355d51',
+      roughness: 0.27,
+      metalness: 0.7,
+    }));
+    const lightMaterial = this.keepMaterial(new MeshStandardMaterial({
+      color: '#d7fff0', emissive: '#8de5c0', emissiveIntensity: 2.2,
+      roughness: 0.28, metalness: 0.08,
     }));
 
     const backWall = new Mesh(this.keepGeometry(new BoxGeometry(28, 8, 0.32)), wallMaterial);
@@ -120,6 +124,31 @@ export class Showroom {
       beam.position.set(x, 7.65, 0);
       beam.castShadow = true;
       this.group.add(beam);
+    }
+
+    // A restrained overhead grid gives the open hall a precise laboratory rhythm.
+    const crossBeamGeometry = this.keepGeometry(new BoxGeometry(27.4, 0.18, 0.2));
+    for (const z of [-7.8, -2.6, 2.6, 7.8]) {
+      const crossBeam = new Mesh(crossBeamGeometry, bronzeMaterial);
+      crossBeam.name = 'Ceiling structural cross member';
+      crossBeam.position.set(0, 7.65, z);
+      crossBeam.castShadow = true;
+      this.group.add(crossBeam);
+    }
+
+    const linearLightGeometry = this.keepGeometry(new BoxGeometry(0.07, 0.045, 13.5));
+    for (const x of [-7.9, -2.65, 2.65, 7.9]) {
+      const linearLight = new Mesh(linearLightGeometry, lightMaterial);
+      linearLight.name = 'Recessed architectural linear light';
+      linearLight.position.set(x, 7.48, -0.7);
+      this.group.add(linearLight);
+    }
+
+    const wallLightGeometry = this.keepGeometry(new BoxGeometry(4.6, 0.055, 0.045));
+    for (const x of [-8.4, 0, 8.4]) {
+      const wallLight = new Mesh(wallLightGeometry, lightMaterial);
+      wallLight.position.set(x, 6.25, -9.8);
+      this.group.add(wallLight);
     }
   }
 
@@ -144,6 +173,10 @@ export class Showroom {
       transparent: true, opacity: 0.23, transmission: 0.5,
       thickness: 0.08, side: DoubleSide, depthWrite: false,
     }));
+    const detailMaterial = this.keepMaterial(new MeshStandardMaterial({
+      color: '#9ccfbc', emissive: '#4b9278', emissiveIntensity: 0.7,
+      roughness: 0.32, metalness: 0.38,
+    }));
 
     const backdrop = new Mesh(this.keepGeometry(new BoxGeometry(5.2, 3.45, 0.2)), wallMaterial);
     backdrop.name = `${layout.id} background wall`;
@@ -164,6 +197,7 @@ export class Showroom {
     zone.add(plinth);
 
     this.createCabinet(zone, trimMaterial, glassMaterial, layout.id);
+    this.createScientificDetails(zone, detailMaterial, trimMaterial, layout.id);
     this.createTitleMarker(zone, layout.id);
 
     const exhibitPlaceholder = new Group();
@@ -181,6 +215,24 @@ export class Showroom {
       hotspotPosition,
       exhibitPlaceholder,
     };
+  }
+
+  private createScientificDetails(zone: Group, lightMaterial: Material, frameMaterial: Material, id: ShowroomZoneId): void {
+    const rail = new Mesh(this.keepGeometry(new BoxGeometry(4.45, 0.035, 0.045)), lightMaterial);
+    rail.name = `${id} integrated display light`;
+    rail.position.set(0, 2.28, 0.14);
+    zone.add(rail);
+
+    const dataRail = new Group();
+    dataRail.name = `${id} research data markers`;
+    dataRail.position.set(-2.15, 1.1, 0.14);
+    const markerGeometry = this.keepGeometry(new BoxGeometry(0.035, 0.18, 0.03));
+    for (let index = 0; index < 7; index += 1) {
+      const marker = new Mesh(markerGeometry, index % 3 === 0 ? lightMaterial : frameMaterial);
+      marker.position.y = index * 0.26;
+      dataRail.add(marker);
+    }
+    zone.add(dataRail);
   }
 
   private createCabinet(zone: Group, frameMaterial: Material, glassMaterial: Material, id: ShowroomZoneId): void {

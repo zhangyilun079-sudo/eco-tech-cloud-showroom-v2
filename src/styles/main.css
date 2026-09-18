@@ -23,9 +23,12 @@ h1 em { color: #9fe0b7; font-style: normal; }
 .status { display: flex; align-items: center; gap: 9px; color: rgba(230, 242, 232, .52); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
 .status span { width: 6px; height: 6px; border-radius: 50%; background: #84dfac; box-shadow: 0 0 12px #84dfac; }
 .controls-hint { display: flex; align-items: flex-end; justify-content: space-between; color: rgba(234, 242, 235, .56); font-size: 11px; }
-.controls-hint > div { display: flex; align-items: center; gap: 14px; }
+.navigation-help { display: flex; align-items: center; gap: 14px; padding: 11px 14px; border: 1px solid rgba(221, 239, 226, .15); border-radius: 10px; background: rgba(7, 24, 18, .28); backdrop-filter: blur(10px); }
 .controls-hint p { line-height: 1.5; margin: 0; }
 .controls-hint strong { color: #eef5ed; font-size: 12px; font-weight: 500; }
+.navigation-help ul { display: grid; grid-template-columns: repeat(4, auto); gap: 8px 18px; list-style: none; padding: 0; margin: 7px 0 0; }
+.navigation-help li { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+.navigation-help kbd { min-width: 29px; color: #a8ddbd; font: 600 9px 'DM Sans', sans-serif; letter-spacing: .04em; }
 .mouse-icon { width: 20px; height: 30px; border: 1px solid rgba(228, 242, 231, .58); border-radius: 10px; position: relative; }
 .mouse-icon::after { content: ''; position: absolute; width: 2px; height: 5px; background: #99deb6; top: 5px; left: 8px; border-radius: 2px; }
 .reset-button { pointer-events: auto; border: 1px solid rgba(221, 239, 226, .28); border-radius: 99px; color: #edf5ee; background: rgba(7, 24, 18, .38); backdrop-filter: blur(12px); padding: 12px 18px; font: 500 11px 'DM Sans', sans-serif; letter-spacing: .05em; cursor: pointer; transition: background .2s, border-color .2s; }
@@ -37,6 +40,6 @@ h1 em { color: #9fe0b7; font-style: normal; }
   .intro { margin-bottom: 15vh; }
   h1 { font-size: 46px; }
   .description { font-size: 13px; max-width: 310px; }
-  .controls-hint > div { display: none; }
+  .navigation-help { display: none; }
   .controls-hint { justify-content: flex-end; }
 }
