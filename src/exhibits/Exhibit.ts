@@ -1,13 +1,7 @@
 import type { Object3D } from 'three';
+import type { ExhibitDefinition } from './ExhibitDefinition';
 
-export interface ExhibitMetadata {
-  readonly id: string;
-  readonly title: string;
-  readonly description: string;
-  readonly category?: string;
-  readonly keyFeatures?: readonly string[];
-  readonly impactLabel?: string;
-}
+export type ExhibitMetadata = ExhibitDefinition;
 
 export interface Exhibit {
   readonly object: Object3D;
