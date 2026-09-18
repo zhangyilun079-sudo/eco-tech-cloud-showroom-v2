@@ -1,4 +1,5 @@
 import type { ExhibitMetadata } from '../exhibits/Exhibit';
+import type { ExhibitComponentDefinition } from '../exhibits/ExhibitDefinition';
 
 export class InfoPanel {
   private readonly element: HTMLElement;
@@ -15,6 +16,13 @@ export class InfoPanel {
   private readonly exhibitDescription: HTMLElement;
   private readonly exhibitFeatures: HTMLElement;
   private readonly exhibitCloseButton: HTMLButtonElement;
+  private readonly componentLabel: HTMLElement;
+  private readonly componentPanel: HTMLElement;
+  private readonly componentName: HTMLElement;
+  private readonly componentRole: HTMLElement;
+  private readonly componentDescription: HTMLElement;
+  private readonly componentFeatures: HTMLElement;
+  private readonly componentCloseButton: HTMLButtonElement;
   private readonly onResetView: () => void;
   private readonly onExitExhibit: () => void;
   private hasHoveredHotspot = false;
@@ -78,6 +86,20 @@ export class InfoPanel {
           <button class="exhibit-specification" type="button" disabled>Technical brief</button>
         </div>
       </section>
+      <div class="component-label" role="status" aria-live="polite">
+        <span class="component-label-marker" aria-hidden="true"></span>
+        <strong class="component-label-title"></strong>
+        <small>Click for details</small>
+      </div>
+      <section class="component-panel" aria-label="Component information" aria-hidden="true">
+        <button class="component-panel-close" type="button" aria-label="Close component information">×</button>
+        <p class="component-panel-kicker">SYSTEM COMPONENT</p>
+        <h2 class="component-panel-name"></h2>
+        <p class="component-panel-role"></p>
+        <p class="component-panel-description"></p>
+        <p class="component-panel-feature-label">Key features</p>
+        <ul class="component-panel-features"></ul>
+      </section>
     `;
     container.append(this.element);
 
@@ -100,9 +122,19 @@ export class InfoPanel {
     const exhibitCloseButton = this.element.querySelector<HTMLButtonElement>('.exhibit-close');
     if (!exhibitCloseButton) throw new Error('Exhibit close button was not created.');
     this.exhibitCloseButton = exhibitCloseButton;
+    this.componentLabel = this.getRequiredElement('.component-label');
+    this.componentPanel = this.getRequiredElement('.component-panel');
+    this.componentName = this.getRequiredElement('.component-panel-name');
+    this.componentRole = this.getRequiredElement('.component-panel-role');
+    this.componentDescription = this.getRequiredElement('.component-panel-description');
+    this.componentFeatures = this.getRequiredElement('.component-panel-features');
+    const componentCloseButton = this.element.querySelector<HTMLButtonElement>('.component-panel-close');
+    if (!componentCloseButton) throw new Error('Component close button was not created.');
+    this.componentCloseButton = componentCloseButton;
     this.resetButton.addEventListener('click', callbacks.onResetView);
     this.closeButton.addEventListener('click', this.hideZoneDetails);
     this.exhibitCloseButton.addEventListener('click', callbacks.onExitExhibit);
+    this.componentCloseButton.addEventListener('click', this.hideComponent);
     window.addEventListener('keydown', this.handleKeyDown);
   }
 
@@ -147,16 +179,49 @@ export class InfoPanel {
   }
 
   public hideExhibit(): void {
+    this.hideComponent();
+    this.showComponentLabel(null);
     this.exhibitPanel.classList.remove('is-visible');
     this.exhibitPanel.setAttribute('aria-hidden', 'true');
     this.element.classList.remove('is-exhibit-mode');
   }
+
+  public showComponentLabel(title: string | null): void {
+    this.componentLabel.querySelector<HTMLElement>('.component-label-title')!.textContent = title ?? '';
+    this.componentLabel.classList.toggle('has-component', title !== null);
+    if (title === null) this.componentLabel.classList.remove('is-visible');
+  }
+
+  public positionComponentLabel(x: number, y: number, isOnScreen: boolean): void {
+    this.componentLabel.style.left = `${x}px`;
+    this.componentLabel.style.top = `${y}px`;
+    this.componentLabel.classList.toggle('is-visible', isOnScreen && this.componentLabel.classList.contains('has-component'));
+  }
+
+  public showComponent(component: ExhibitComponentDefinition): void {
+    this.componentName.textContent = component.title;
+    this.componentRole.textContent = component.technicalRole;
+    this.componentDescription.textContent = component.description;
+    this.componentFeatures.replaceChildren(...component.keyFeatures.map((feature) => {
+      const item = document.createElement('li');
+      item.textContent = feature;
+      return item;
+    }));
+    this.componentPanel.classList.add('is-visible');
+    this.componentPanel.setAttribute('aria-hidden', 'false');
+  }
+
+  public readonly hideComponent = (): void => {
+    this.componentPanel.classList.remove('is-visible');
+    this.componentPanel.setAttribute('aria-hidden', 'true');
+  };
 
   public dispose(): void {
     window.removeEventListener('keydown', this.handleKeyDown);
     this.resetButton.replaceWith(this.resetButton.cloneNode(true));
     this.closeButton.removeEventListener('click', this.hideZoneDetails);
     this.exhibitCloseButton.removeEventListener('click', this.onExitExhibit);
+    this.componentCloseButton.removeEventListener('click', this.hideComponent);
     this.element.remove();
   }
 

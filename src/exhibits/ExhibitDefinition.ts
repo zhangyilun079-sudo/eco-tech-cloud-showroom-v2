@@ -33,7 +33,9 @@ export interface ExhibitLabel {
 export interface ExhibitComponentDefinition {
   readonly id: string;
   readonly title: string;
+  readonly technicalRole: string;
   readonly description: string;
+  readonly keyFeatures: readonly string[];
   readonly objectReference: ExhibitObjectReference | null;
   readonly position: ExhibitVector3;
   readonly rotation: ExhibitRotation;
