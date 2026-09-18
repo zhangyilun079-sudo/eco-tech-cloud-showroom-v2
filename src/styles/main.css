@@ -38,8 +38,9 @@ h1 em { color: #9fe0b7; font-style: normal; }
 .reset-button span { color: #90ddb2; margin-left: 12px; }
 .reset-button:hover { background: rgba(58, 111, 82, .35); border-color: #75c99b; }
 
-.hotspot-label { position: absolute; left: 50%; top: 34px; display: flex; align-items: center; gap: 12px; padding: 10px 15px; border: 1px solid rgba(148, 231, 190, .4); border-radius: 99px; background: rgba(5, 22, 17, .78); box-shadow: 0 12px 40px rgba(0, 0, 0, .2); backdrop-filter: blur(14px); opacity: 0; transform: translate(-50%, -8px); transition: opacity .18s, transform .18s; }
-.hotspot-label.is-visible { opacity: 1; transform: translate(-50%, 0); }
+.hotspot-label { position: fixed; z-index: 3; display: flex; align-items: center; gap: 12px; max-width: min(360px, calc(100vw - 32px)); padding: 10px 15px; border: 1px solid rgba(148, 231, 190, .4); border-radius: 12px; background: rgba(5, 22, 17, .88); box-shadow: 0 12px 40px rgba(0, 0, 0, .3); backdrop-filter: blur(14px); opacity: 0; visibility: hidden; transform: translate(-50%, calc(-100% - 22px)) scale(.97); transform-origin: 50% 100%; transition: opacity .14s, transform .14s, visibility .14s; will-change: left, top; }
+.hotspot-label::after { content: ''; position: absolute; left: 50%; top: 100%; width: 1px; height: 16px; background: linear-gradient(rgba(148, 231, 190, .65), rgba(148, 231, 190, .12)); }
+.hotspot-label.is-visible { opacity: 1; visibility: visible; transform: translate(-50%, calc(-100% - 18px)) scale(1); }
 .hotspot-label-code { color: #92e1b7; font-size: 9px; font-weight: 600; letter-spacing: .16em; }
 .hotspot-label-title { color: #f0f8f1; font-size: 12px; font-weight: 500; }
 .hotspot-label small { color: rgba(228, 241, 231, .45); font-size: 9px; letter-spacing: .08em; }
@@ -71,7 +72,8 @@ h1 em { color: #9fe0b7; font-style: normal; }
   .description { font-size: 13px; max-width: 310px; }
   .navigation-help { display: none; }
   .controls-hint { justify-content: flex-end; }
-  .hotspot-label { top: 22px; }
+  .hotspot-label { gap: 8px; max-width: calc(100vw - 24px); padding: 9px 12px; }
+  .hotspot-label-title { overflow: hidden; max-width: 58vw; text-overflow: ellipsis; white-space: nowrap; }
   .hotspot-label small { display: none; }
   .zone-panel { right: 24px; top: auto; bottom: 88px; transform: translateY(15px); }
   .zone-panel.is-visible { transform: translateY(0); }

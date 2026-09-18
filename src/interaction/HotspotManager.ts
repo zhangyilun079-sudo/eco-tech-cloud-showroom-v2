@@ -23,6 +23,8 @@ export class HotspotManager {
   private readonly raycastManager: RaycastManager;
   private readonly canvas: HTMLCanvasElement;
   private readonly infoPanel: InfoPanel;
+  private readonly camera: PerspectiveCamera;
+  private readonly projectedPosition = new Vector3();
   private hovered: Hotspot | null = null;
   private enabled = true;
 
@@ -35,6 +37,7 @@ export class HotspotManager {
   ) {
     this.canvas = canvas;
     this.infoPanel = infoPanel;
+    this.camera = camera;
     this.group.name = 'Exhibition zone hotspots';
     this.hotspots = zones.map((zone) => {
       const content = ZONE_CONTENT[zone.id];
@@ -74,6 +77,7 @@ export class HotspotManager {
 
   public update(deltaSeconds: number): void {
     this.hotspots.forEach((hotspot) => hotspot.update(deltaSeconds));
+    this.updateHoveredLabelPosition();
   }
 
   public setEnabled(enabled: boolean): void {
@@ -89,5 +93,23 @@ export class HotspotManager {
     this.raycastManager.dispose();
     this.hotspots.forEach((hotspot) => hotspot.dispose());
     this.group.clear();
+  }
+
+  private updateHoveredLabelPosition(): void {
+    if (!this.hovered) return;
+
+    this.hovered.object.getWorldPosition(this.projectedPosition);
+    this.projectedPosition.project(this.camera);
+
+    const rect = this.canvas.getBoundingClientRect();
+    const isOnScreen = this.projectedPosition.z >= -1
+      && this.projectedPosition.z <= 1
+      && this.projectedPosition.x >= -1
+      && this.projectedPosition.x <= 1
+      && this.projectedPosition.y >= -1
+      && this.projectedPosition.y <= 1;
+    const x = rect.left + (this.projectedPosition.x + 1) * rect.width / 2;
+    const y = rect.top + (1 - this.projectedPosition.y) * rect.height / 2;
+    this.infoPanel.positionHotspotLabel(x, y, isOnScreen);
   }
 }

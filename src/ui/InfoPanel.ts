@@ -15,6 +15,7 @@ export class InfoPanel {
   private readonly exhibitCloseButton: HTMLButtonElement;
   private readonly onResetView: () => void;
   private readonly onExitExhibit: () => void;
+  private hasHoveredHotspot = false;
   private readonly handleKeyDown = (event: KeyboardEvent): void => {
     if (event.key.toLowerCase() !== 'r' || event.repeat || this.isTypingTarget(event.target)) return;
     this.onResetView();
@@ -98,7 +99,15 @@ export class InfoPanel {
     const name = this.hotspotLabel.querySelector<HTMLElement>('.hotspot-label-title');
     if (code) code.textContent = id ?? '';
     if (name) name.textContent = title ?? '';
-    this.hotspotLabel.classList.toggle('is-visible', id !== null);
+    this.hasHoveredHotspot = id !== null;
+    if (!this.hasHoveredHotspot) this.hotspotLabel.classList.remove('is-visible');
+  }
+
+  /** Positions the HTML label at a hotspot's projected viewport coordinates. */
+  public positionHotspotLabel(x: number, y: number, isOnScreen: boolean): void {
+    this.hotspotLabel.style.left = `${x}px`;
+    this.hotspotLabel.style.top = `${y}px`;
+    this.hotspotLabel.classList.toggle('is-visible', this.hasHoveredHotspot && isOnScreen);
   }
 
   public showZoneDetails(id: string, title: string, description: string): void {
