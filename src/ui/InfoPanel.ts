@@ -36,68 +36,62 @@ export class InfoPanel {
     this.onExitExhibit = callbacks.onExitExhibit;
     this.element = document.createElement('aside');
     this.element.className = 'info-panel';
-    this.element.setAttribute('aria-label', 'Showroom information');
+    this.element.setAttribute('aria-label', '展厅信息');
     this.element.innerHTML = `
-      <div class="brand"><span class="brand-mark" aria-hidden="true">◒</span><span>ECOSPHERE</span></div>
-      <div class="intro">
-        <p class="eyebrow">Virtual exhibition · 01</p>
-        <h1>Ideas for a<br><em>living planet.</em></h1>
-        <p class="description">A digital space for technologies that help restore, renew, and reimagine our shared future.</p>
-        <div class="status"><span></span> Showroom foundation online</div>
-      </div>
+      <div class="brand"><span class="brand-mark" aria-hidden="true">◒</span><span>生态科技云展厅</span></div>
       <div class="controls-hint">
         <div class="navigation-help">
           <span class="mouse-icon" aria-hidden="true"></span>
           <div>
-            <strong>Navigation</strong>
-            <ul aria-label="Showroom controls">
-              <li><kbd>LMB</kbd><span>Rotate view</span></li>
-              <li><kbd>RMB</kbd><span>Pan view</span></li>
-              <li><kbd>Wheel</kbd><span>Zoom</span></li>
-              <li><kbd>R</kbd><span>Reset view</span></li>
+            <strong>操作指引</strong>
+            <ul aria-label="展厅操作方式">
+              <li><kbd>左键</kbd><span>旋转视角</span></li>
+              <li><kbd>右键</kbd><span>平移视角</span></li>
+              <li><kbd>滚轮</kbd><span>缩放视图</span></li>
+              <li><kbd>R</kbd><span>恢复视角</span></li>
             </ul>
           </div>
         </div>
-        <button type="button" class="reset-button">Reset view <span>↗</span></button>
+        <button type="button" class="reset-button">恢复视角 <span>↗</span></button>
       </div>
       <div class="hotspot-label" role="status" aria-live="polite">
         <span class="hotspot-label-code"></span>
         <strong class="hotspot-label-title"></strong>
         <small>点击探索</small>
       </div>
-      <section class="zone-panel" aria-label="Exhibition zone details" aria-hidden="true">
-        <button class="zone-panel-close" type="button" aria-label="Close zone details">×</button>
+      <section class="zone-panel" aria-label="展区详情" aria-hidden="true">
+        <button class="zone-panel-close" type="button" aria-label="关闭展区详情">×</button>
         <p class="zone-panel-code"></p>
         <h2 class="zone-panel-title"></h2>
         <p class="zone-panel-description"></p>
       </section>
-      <section class="exhibit-panel" aria-label="Exhibit viewing controls" aria-hidden="true">
-        <p class="exhibit-mode-label">FOCUSED EXHIBIT · ZONE_01</p>
+      <section class="exhibit-panel" aria-label="展品展示与操作" aria-hidden="true">
+        <p class="exhibit-mode-label">展品展示模式 · 01 号展区</p>
         <p class="exhibit-category"></p>
         <h2 class="exhibit-title"></h2>
         <p class="exhibit-description"></p>
         <div class="exhibit-feature-section">
-          <p class="exhibit-section-label">Key features</p>
+          <p class="exhibit-section-label">核心特点</p>
           <ul class="exhibit-features"></ul>
         </div>
-        <div class="exhibit-controls"><span>Drag</span> rotate equipment <span>Wheel</span> zoom</div>
+        <div class="exhibit-controls"><span>拖动</span>旋转设备 <span>滚轮</span>缩放视图</div>
         <div class="exhibit-actions">
-          <button class="exhibit-close" type="button"><span>←</span> Return to showroom</button>
-          <button class="exhibit-specification" type="button" disabled>Technical brief</button>
+          <button class="exhibit-close" type="button"><span>←</span> 返回展厅</button>
+          <button class="exhibit-specification" type="button" disabled>技术资料</button>
         </div>
       </section>
       <div class="component-label" role="status" aria-live="polite">
         <span class="component-label-marker" aria-hidden="true"></span>
         <strong class="component-label-title"></strong>
-        <small>Click for details</small>
+        <small>点击查看详情</small>
       </div>
-      <section class="component-panel" aria-label="Component information" aria-hidden="true">
-        <button class="component-panel-close" type="button" aria-label="Close component information">×</button>
-        <p class="component-panel-kicker">SYSTEM COMPONENT</p>
+      <section class="component-panel" aria-label="部件信息" aria-hidden="true">
+        <button class="component-panel-close" type="button" aria-label="关闭部件信息">×</button>
+        <p class="component-panel-kicker">系统部件</p>
         <h2 class="component-panel-name"></h2>
         <p class="component-panel-role"></p>
         <p class="component-panel-description"></p>
-        <p class="component-panel-feature-label">Key features</p>
+        <p class="component-panel-feature-label">核心特点</p>
         <ul class="component-panel-features"></ul>
       </section>
     `;
