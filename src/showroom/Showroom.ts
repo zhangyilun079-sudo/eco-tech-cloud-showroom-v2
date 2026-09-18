@@ -2,7 +2,6 @@ import {
   BoxGeometry,
   BufferGeometry,
   CanvasTexture,
-  CircleGeometry,
   Color,
   CylinderGeometry,
   DoubleSide,
@@ -12,7 +11,9 @@ import {
   MeshPhysicalMaterial,
   MeshStandardMaterial,
   PlaneGeometry,
+  RingGeometry,
   SRGBColorSpace,
+  TorusGeometry,
   Texture,
   Vector3,
 } from 'three';
@@ -52,6 +53,7 @@ export class Showroom {
     this.group.name = 'Procedural ecological technology exhibition hall';
     this.createFloor();
     this.createArchitecture();
+    this.createEnvironmentalDataCore();
     this.zones = ZONE_LAYOUTS.map((layout) => this.createZone(layout));
   }
 
@@ -63,7 +65,7 @@ export class Showroom {
 
   private createFloor(): void {
     const floorMaterial = this.keepMaterial(new MeshPhysicalMaterial({
-      color: new Color('#cbd1ca'),
+      color: new Color('#c7cecc'),
       roughness: 0.64,
       metalness: 0.04,
       clearcoat: 0.16,
@@ -76,16 +78,75 @@ export class Showroom {
     this.group.add(floor);
 
     const insetMaterial = this.keepMaterial(new MeshStandardMaterial({
-      color: '#527a6b',
+      color: '#263f45',
       roughness: 0.6,
       metalness: 0.25,
     }));
-    const ring = new Mesh(this.keepGeometry(new CircleGeometry(4.15, 64)), insetMaterial);
+    const ring = new Mesh(this.keepGeometry(new RingGeometry(3.55, 4.15, 64)), insetMaterial);
     ring.name = 'Central hall floor inset';
     ring.rotation.x = -Math.PI / 2;
     ring.position.y = 0.008;
     ring.receiveShadow = true;
     this.group.add(ring);
+  }
+
+  /** A low, open instrument cluster that keeps every route through the hall clear. */
+  private createEnvironmentalDataCore(): void {
+    const core = new Group();
+    core.name = 'Central smart environmental data core';
+
+    const frameMaterial = this.keepMaterial(new MeshStandardMaterial({
+      color: '#244951', roughness: 0.3, metalness: 0.72,
+    }));
+    const signalMaterial = this.keepMaterial(new MeshStandardMaterial({
+      color: '#8be4ce', emissive: '#38bfa5', emissiveIntensity: 1.5,
+      roughness: 0.24, metalness: 0.18,
+    }));
+    const glassMaterial = this.keepMaterial(new MeshPhysicalMaterial({
+      color: '#bdece8', transparent: true, opacity: 0.18, transmission: 0.65,
+      roughness: 0.08, metalness: 0, depthWrite: false, side: DoubleSide,
+    }));
+
+    // Concentric telemetry rails establish the hub without filling its center.
+    for (const [radius, y] of [[3.6, 0.035], [2.85, 0.045], [1.95, 0.055]] as const) {
+      const telemetryRing = new Mesh(
+        this.keepGeometry(new TorusGeometry(radius, 0.025, 8, 80)),
+        signalMaterial,
+      );
+      telemetryRing.name = 'Live environmental telemetry floor ring';
+      telemetryRing.rotation.x = Math.PI / 2;
+      telemetryRing.position.y = y;
+      core.add(telemetryRing);
+    }
+
+    // Three transparent readouts leave broad gaps between all exhibition routes.
+    for (let index = 0; index < 3; index += 1) {
+      const angle = index * Math.PI * 2 / 3 + Math.PI / 6;
+      const station = new Group();
+      station.name = `Environmental monitoring station ${index + 1}`;
+      station.position.set(Math.cos(angle) * 2.65, 0, Math.sin(angle) * 2.65);
+      station.rotation.y = -angle + Math.PI / 2;
+
+      const mast = new Mesh(this.keepGeometry(new BoxGeometry(0.055, 1.75, 0.055)), frameMaterial);
+      mast.position.y = 0.9;
+      station.add(mast);
+      const screen = new Mesh(this.keepGeometry(new PlaneGeometry(1.2, 0.62)), glassMaterial);
+      screen.position.set(0, 1.35, 0.04);
+      station.add(screen);
+      const header = new Mesh(this.keepGeometry(new BoxGeometry(1.2, 0.035, 0.035)), signalMaterial);
+      header.position.set(0, 1.68, 0.055);
+      station.add(header);
+      for (let barIndex = 0; barIndex < 5; barIndex += 1) {
+        const bar = new Mesh(
+          this.keepGeometry(new BoxGeometry(0.1, 0.08 + barIndex * 0.045, 0.025)),
+          signalMaterial,
+        );
+        bar.position.set(-0.4 + barIndex * 0.2, 1.14 + bar.geometry.parameters.height / 2, 0.065);
+        station.add(bar);
+      }
+      core.add(station);
+    }
+    this.group.add(core);
   }
 
   private createArchitecture(): void {
@@ -158,8 +219,8 @@ export class Showroom {
     zone.position.set(...layout.position);
     zone.rotation.y = layout.rotation;
 
-    const wallMaterial = this.keepMaterial(new MeshStandardMaterial({
-      color: '#eef1ec', roughness: 0.78, metalness: 0.02,
+    const panelMaterial = this.keepMaterial(new MeshStandardMaterial({
+      color: '#dce4e2', roughness: 0.7, metalness: 0.08,
     }));
     const trimMaterial = this.keepMaterial(new MeshStandardMaterial({
       color: '#31594c', roughness: 0.38, metalness: 0.42,
@@ -178,19 +239,10 @@ export class Showroom {
       roughness: 0.32, metalness: 0.38,
     }));
 
-    const backdrop = new Mesh(this.keepGeometry(new BoxGeometry(5.2, 3.45, 0.2)), wallMaterial);
-    backdrop.name = `${layout.id} background wall`;
-    backdrop.position.set(0, 1.74, 0);
-    backdrop.castShadow = true;
-    backdrop.receiveShadow = true;
-    zone.add(backdrop);
+    this.createCapsuleFrame(zone, panelMaterial, trimMaterial, detailMaterial, layout.id);
 
-    const accent = new Mesh(this.keepGeometry(new BoxGeometry(5.25, 0.12, 0.12)), trimMaterial);
-    accent.position.set(0, 3.5, 0.16);
-    zone.add(accent);
-
-    const plinth = new Mesh(this.keepGeometry(new CylinderGeometry(1.35, 1.48, 0.36, 48)), plinthMaterial);
-    plinth.name = `${layout.id} exhibition plinth`;
+    const plinth = new Mesh(this.keepGeometry(new CylinderGeometry(1.35, 1.48, 0.28, 8)), plinthMaterial);
+    plinth.name = `${layout.id} equipment presentation deck`;
     plinth.position.set(0, 0.18, 1.45);
     plinth.castShadow = true;
     plinth.receiveShadow = true;
@@ -198,6 +250,7 @@ export class Showroom {
 
     this.createCabinet(zone, trimMaterial, glassMaterial, layout.id);
     this.createScientificDetails(zone, detailMaterial, trimMaterial, layout.id);
+    this.createControlPanel(zone, panelMaterial, trimMaterial, detailMaterial, layout.id);
     this.createTitleMarker(zone, layout.id);
 
     const exhibitPlaceholder = new Group();
@@ -215,6 +268,45 @@ export class Showroom {
       hotspotPosition,
       exhibitPlaceholder,
     };
+  }
+
+  private createCapsuleFrame(zone: Group, panelMaterial: Material, frameMaterial: Material, signalMaterial: Material, id: ShowroomZoneId): void {
+    const rearPanel = new Mesh(this.keepGeometry(new BoxGeometry(4.7, 2.65, 0.1)), panelMaterial);
+    rearPanel.name = `${id} modular service panel`;
+    rearPanel.position.set(0, 1.72, 0);
+    rearPanel.receiveShadow = true;
+    zone.add(rearPanel);
+
+    const vertical = this.keepGeometry(new BoxGeometry(0.11, 3.5, 0.18));
+    for (const x of [-2.55, 2.55]) {
+      const upright = new Mesh(vertical, frameMaterial);
+      upright.position.set(x, 1.75, 0.25);
+      upright.castShadow = true;
+      zone.add(upright);
+    }
+    const topRail = new Mesh(this.keepGeometry(new BoxGeometry(5.2, 0.12, 0.18)), frameMaterial);
+    topRail.position.set(0, 3.5, 0.25);
+    zone.add(topRail);
+    const serviceRail = new Mesh(this.keepGeometry(new BoxGeometry(4.55, 0.045, 0.04)), signalMaterial);
+    serviceRail.position.set(0, 3.25, 0.12);
+    zone.add(serviceRail);
+  }
+
+  private createControlPanel(zone: Group, panelMaterial: Material, frameMaterial: Material, signalMaterial: Material, id: ShowroomZoneId): void {
+    const consoleGroup = new Group();
+    consoleGroup.name = `${id} intelligent control console`;
+    consoleGroup.position.set(1.72, 1.38, 0.16);
+    const console = new Mesh(this.keepGeometry(new BoxGeometry(1.05, 0.82, 0.1)), frameMaterial);
+    consoleGroup.add(console);
+    const display = new Mesh(this.keepGeometry(new PlaneGeometry(0.88, 0.64)), panelMaterial);
+    display.position.z = 0.056;
+    consoleGroup.add(display);
+    for (let row = 0; row < 3; row += 1) {
+      const indicator = new Mesh(this.keepGeometry(new BoxGeometry(0.5 - row * 0.09, 0.035, 0.025)), signalMaterial);
+      indicator.position.set(-0.12 + row * 0.045, 0.2 - row * 0.2, 0.075);
+      consoleGroup.add(indicator);
+    }
+    zone.add(consoleGroup);
   }
 
   private createScientificDetails(zone: Group, lightMaterial: Material, frameMaterial: Material, id: ShowroomZoneId): void {
