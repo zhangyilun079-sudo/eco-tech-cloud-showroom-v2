@@ -7,6 +7,7 @@ import { ComponentInteractionManager } from '../exhibits/components/ComponentInt
 import { mvrWastewaterTreatmentDefinition } from '../exhibits/data/mvrWastewaterTreatment';
 import { MvrWastewaterTreatmentModel } from '../exhibits/models/MvrWastewaterTreatmentModel';
 import { ProcessController } from '../exhibits/process/ProcessController';
+import { TechnologyController } from '../exhibits/technology/TechnologyController';
 import { HotspotManager } from '../interaction/HotspotManager';
 import { Showroom } from '../showroom/Showroom';
 import { InfoPanel } from '../ui/InfoPanel';
@@ -29,6 +30,7 @@ export class ShowroomApplication {
   private readonly viewMode = new ViewModeState();
   private readonly explosionController: ExplosionController;
   private readonly processController: ProcessController;
+  private readonly technologyController: TechnologyController;
   private readonly clock = new Clock();
   private animationFrameId: number | null = null;
 
@@ -46,6 +48,7 @@ export class ShowroomApplication {
       onPreviousProcessStep: () => this.processController.previous(),
       onNextProcessStep: () => this.processController.next(),
       onToggleProcessAutoPlay: () => this.processController.toggleAutoPlay(),
+      onToggleTechnology: () => this.technologyController.toggle(),
     });
     this.processController = new ProcessController(
       mvrExhibit.object,
@@ -63,6 +66,16 @@ export class ShowroomApplication {
       this.camera.camera,
       this.renderer.renderer.domElement,
       this.infoPanel,
+    );
+    this.technologyController = new TechnologyController(
+      container,
+      mvrExhibit.metadata,
+      this.viewMode,
+      (active) => {
+        this.infoPanel.setTechnologyMode(active);
+        if (active) this.componentInteractions.deactivate();
+        else this.componentInteractions.activate(mvrExhibit);
+      },
     );
     this.exhibitViewer = new ExhibitViewer(
       this.camera,
@@ -112,6 +125,7 @@ export class ShowroomApplication {
     window.removeEventListener('resize', this.handleResize);
     this.showroom.dispose();
     this.processController.dispose();
+    this.technologyController.dispose();
     this.exhibits.dispose();
     this.exhibitShowcase.dispose();
     this.hotspots.dispose();
@@ -143,6 +157,7 @@ export class ShowroomApplication {
   };
 
   private exitExhibitMode(): void {
+    this.technologyController.exit();
     this.processController.exit();
     this.explosionController.collapse(0);
     this.infoPanel.setExploded(false);

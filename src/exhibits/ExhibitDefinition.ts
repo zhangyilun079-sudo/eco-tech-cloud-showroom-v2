@@ -59,6 +59,29 @@ export interface ExhibitProcessStepDefinition {
   };
 }
 
+export interface TechnologyOverview {
+  readonly title: string;
+  readonly category: string;
+  readonly summary: string;
+}
+
+export interface TechnologyAdvantage {
+  readonly title: string;
+  readonly description: string;
+}
+
+export interface TechnologyMetric {
+  readonly label: string;
+  readonly value: string;
+  readonly note?: string;
+}
+
+export interface EconomicIndicator {
+  readonly title: string;
+  readonly value: string;
+  readonly description: string;
+}
+
 /** The content and scene contract shared by exhibit UI, viewers, and loaders. */
 export interface ExhibitDefinition {
   readonly id: string;
@@ -69,6 +92,11 @@ export interface ExhibitDefinition {
   readonly keyFeatures: readonly string[];
   readonly components: readonly ExhibitComponentDefinition[];
   readonly processSteps: readonly ExhibitProcessStepDefinition[];
+  readonly technologyOverview: TechnologyOverview;
+  readonly technicalAdvantages: readonly TechnologyAdvantage[];
+  readonly technologyMetrics: readonly TechnologyMetric[];
+  readonly applications: readonly string[];
+  readonly economicIndicators: readonly EconomicIndicator[];
   /** Optional presentation copy retained for the current showcase panel. */
   readonly impactLabel?: string;
 }
