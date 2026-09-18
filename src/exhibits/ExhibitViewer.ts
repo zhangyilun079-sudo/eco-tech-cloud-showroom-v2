@@ -1,4 +1,4 @@
-import { MathUtils, Vector2, Vector3 } from 'three';
+import { Box3, MathUtils, Vector2, Vector3 } from 'three';
 import type { CameraController, CameraState } from '../core/CameraController';
 import { ViewMode, type ViewModeState } from '../core/ViewMode';
 import type { InfoPanel } from '../ui/InfoPanel';
@@ -21,7 +21,8 @@ export class ExhibitViewer {
   private transition: Transition | null = null;
   private pointerId: number | null = null;
   private readonly pointerPosition = new Vector2();
-  private zoomDistance = 5.2;
+  private zoomDistance = 8.4;
+  private focusHeight = 2.35;
 
   public constructor(
     private readonly cameraController: CameraController,
@@ -51,9 +52,12 @@ export class ExhibitViewer {
     exhibit.object.rotation.set(0, -0.25, 0);
     exhibit.object.visible = true;
     this.showcase.showAt(position);
-    this.zoomDistance = 5.2;
+    const bounds = new Box3().setFromObject(exhibit.object);
+    const size = bounds.getSize(new Vector3());
+    this.focusHeight = Math.max(1.35, size.y * 0.46);
+    this.zoomDistance = Math.max(5.2, Math.max(size.x, size.y) * 1.38);
 
-    const target = position.clone().add(new Vector3(0, 1.35, 0));
+    const target = position.clone().add(new Vector3(0, this.focusHeight, 0));
     const destination = { position: target.clone().add(new Vector3(0, 0.65, this.zoomDistance)), target };
     this.beginTransition(destination);
     this.infoPanel.showExhibit(exhibit.metadata);
@@ -137,8 +141,8 @@ export class ExhibitViewer {
   private readonly handleWheel = (event: WheelEvent): void => {
     if (this.viewMode.mode !== ViewMode.EXHIBIT || this.transition || !this.activeExhibit) return;
     event.preventDefault();
-    this.zoomDistance = MathUtils.clamp(this.zoomDistance + event.deltaY * 0.004, 3.4, 7.2);
-    const target = this.activeExhibit.object.position.clone().add(new Vector3(0, 1.35, 0));
+    this.zoomDistance = MathUtils.clamp(this.zoomDistance + event.deltaY * 0.004, 4.5, 11);
+    const target = this.activeExhibit.object.position.clone().add(new Vector3(0, this.focusHeight, 0));
     this.cameraController.applyState({
       position: target.clone().add(new Vector3(0, 0.65, this.zoomDistance)),
       target,
