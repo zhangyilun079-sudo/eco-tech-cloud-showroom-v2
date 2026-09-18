@@ -11,7 +11,7 @@ export class RendererManager {
     this.renderer.toneMappingExposure = 1.05;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = PCFSoftShadowMap;
-    this.renderer.domElement.setAttribute('aria-label', 'Interactive 3D eco technology showroom');
+    this.renderer.domElement.setAttribute('aria-label', '交互式三维生态科技展厅');
     container.prepend(this.renderer.domElement);
   }
 
