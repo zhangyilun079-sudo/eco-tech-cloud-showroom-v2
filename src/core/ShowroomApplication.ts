@@ -61,11 +61,7 @@ export class ShowroomApplication {
       (step) => this.infoPanel.showProcessStep(step),
       (active) => {
         this.infoPanel.setProcessMode(active);
-        if (active) this.componentInteractions.deactivate();
-        else {
-          this.componentInteractions.activate(mvrExhibit);
-          this.modeMenu?.setMode('components');
-        }
+        this.modeMenu?.setMode(active ? 'process' : null);
       },
       (active) => this.infoPanel.setProcessAutoPlaying(active),
     );
@@ -81,14 +77,10 @@ export class ShowroomApplication {
       this.viewMode,
       (active) => {
         this.infoPanel.setTechnologyMode(active);
-        if (active) this.componentInteractions.deactivate();
-        else {
-          this.componentInteractions.activate(mvrExhibit);
-          this.modeMenu?.setMode('components');
-        }
+        this.modeMenu?.setMode(active ? 'technology' : null);
       },
     );
-    this.modeMenu = new ExhibitModeMenu(container, (mode) => this.selectExhibitMode(mode, mvrExhibit));
+    this.modeMenu = new ExhibitModeMenu(container, (mode) => this.selectExhibitMode(mode));
     this.resourceManager.registerCleanup('explosion', () => this.explosionController.cleanupAnimation());
     this.resourceManager.registerCleanup('process', () => this.processController.cleanupVisualization());
     this.resourceManager.registerCleanup('technology', () => this.technologyController.resetHighlight());
@@ -110,9 +102,10 @@ export class ShowroomApplication {
         if (zone.id !== 'ZONE_01') return false;
         this.hotspots.setEnabled(false);
         this.exhibitViewer.enter(mvrExhibit, zone.hotspotPosition);
-        this.modeMenu.setMode('equipment');
+        this.modeMenu.setMode(null);
+        this.modeMenu.setExploded(false);
         this.modeMenu.show();
-        this.componentInteractions.deactivate();
+        this.componentInteractions.activate(mvrExhibit);
         return true;
       },
     );
@@ -180,6 +173,7 @@ export class ShowroomApplication {
     this.processController.exit();
     this.explosionController.collapse(0);
     this.infoPanel.setExploded(false);
+    this.modeMenu.setExploded(false);
     this.componentInteractions.deactivate();
     this.resourceManager.cleanupAll();
     this.modeMenu.hide();
@@ -191,12 +185,14 @@ export class ShowroomApplication {
       this.viewMode.set(ViewMode.EXPLODED);
       this.explosionController.explode();
       this.infoPanel.setExploded(true);
+      this.modeMenu.setExploded(true);
       this.modeMenu.setMode('exploded');
     } else if (this.viewMode.mode === ViewMode.EXPLODED) {
       this.viewMode.set(ViewMode.EXHIBIT);
       this.explosionController.collapse();
       this.infoPanel.setExploded(false);
-      this.modeMenu.setMode('equipment');
+      this.modeMenu.setExploded(false);
+      this.modeMenu.setMode(null);
     }
   }
 
@@ -208,28 +204,44 @@ export class ShowroomApplication {
     if (this.viewMode.mode === ViewMode.EXPLODED) {
       this.explosionController.collapse();
       this.infoPanel.setExploded(false);
+      this.modeMenu.setExploded(false);
       this.viewMode.set(ViewMode.EXHIBIT);
     }
     this.processController.enter();
   }
 
-  private selectExhibitMode(mode: ExhibitNavigationMode, exhibit: MvrWastewaterTreatmentModel): void {
+  private selectExhibitMode(mode: ExhibitNavigationMode): void {
+    if (mode === 'return') {
+      this.exitExhibitMode();
+      return;
+    }
+    if (mode === 'exploded' && this.viewMode.mode === ViewMode.EXPLODED) {
+      this.toggleExplodedView();
+      return;
+    }
+    if (mode === 'process' && this.viewMode.mode === ViewMode.PROCESS) {
+      this.processController.exit();
+      return;
+    }
+    if (mode === 'technology' && this.viewMode.mode === ViewMode.TECHNOLOGY) {
+      this.technologyController.exit();
+      return;
+    }
     if (this.viewMode.mode === ViewMode.PROCESS) this.processController.exit();
     if (this.viewMode.mode === ViewMode.TECHNOLOGY) this.technologyController.exit();
     if (this.viewMode.mode === ViewMode.EXPLODED) {
       this.resourceManager.cleanup('explosion');
       this.infoPanel.setExploded(false);
+      this.modeMenu.setExploded(false);
       this.viewMode.set(ViewMode.EXHIBIT);
     }
     this.resourceManager.cleanup('process');
     this.resourceManager.cleanup('technology');
-    this.componentInteractions.deactivate();
-
-    if (mode === 'components') this.componentInteractions.activate(exhibit);
-    else if (mode === 'exploded') {
+    if (mode === 'exploded') {
       this.viewMode.set(ViewMode.EXPLODED);
       this.explosionController.explode();
       this.infoPanel.setExploded(true);
+      this.modeMenu.setExploded(true);
     } else if (mode === 'process') this.processController.enter();
     else if (mode === 'technology') this.technologyController.enter();
     this.modeMenu.setMode(mode);

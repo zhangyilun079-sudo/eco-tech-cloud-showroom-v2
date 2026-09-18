@@ -81,7 +81,6 @@ export class InfoPanel {
               <li><kbd>左键</kbd><span>旋转视角</span></li>
               <li><kbd>右键</kbd><span>平移视角</span></li>
               <li><kbd>滚轮</kbd><span>缩放视图</span></li>
-              <li><kbd>R</kbd><span>恢复视角</span></li>
             </ul>
           </div>
         </div>
