@@ -1,5 +1,6 @@
 import { Clock, Color, Fog, Scene } from 'three';
 import { ExhibitRegistry } from '../exhibits/ExhibitRegistry';
+import { ExhibitShowcase } from '../exhibits/ExhibitShowcase';
 import { ExhibitViewer } from '../exhibits/ExhibitViewer';
 import { PlaceholderExhibit } from '../exhibits/PlaceholderExhibit';
 import { HotspotManager } from '../interaction/HotspotManager';
@@ -16,6 +17,7 @@ export class ShowroomApplication {
   private readonly camera: CameraController;
   private readonly showroom = new Showroom();
   private readonly exhibits = new ExhibitRegistry();
+  private readonly exhibitShowcase = new ExhibitShowcase();
   private readonly infoPanel: InfoPanel;
   private readonly hotspots: HotspotManager;
   private readonly exhibitViewer: ExhibitViewer;
@@ -37,6 +39,8 @@ export class ShowroomApplication {
       this.renderer.renderer.domElement,
       this.viewMode,
       this.infoPanel,
+      this.exhibitShowcase,
+      (active) => { this.showroom.group.visible = !active; },
       () => this.hotspots.setEnabled(true),
     );
     this.hotspots = new HotspotManager(
@@ -54,7 +58,13 @@ export class ShowroomApplication {
 
     this.scene.background = new Color('#07120f');
     this.scene.fog = new Fog('#07120f', 22, 46);
-    this.scene.add(new LightingRig(), this.showroom.group, this.exhibits.group, this.hotspots.group);
+    this.scene.add(
+      new LightingRig(),
+      this.showroom.group,
+      this.exhibitShowcase,
+      this.exhibits.group,
+      this.hotspots.group,
+    );
 
     window.addEventListener('resize', this.handleResize);
     this.handleResize();
@@ -71,6 +81,7 @@ export class ShowroomApplication {
     window.removeEventListener('resize', this.handleResize);
     this.showroom.dispose();
     this.exhibits.dispose();
+    this.exhibitShowcase.dispose();
     this.hotspots.dispose();
     this.exhibitViewer.dispose();
     this.infoPanel.dispose();

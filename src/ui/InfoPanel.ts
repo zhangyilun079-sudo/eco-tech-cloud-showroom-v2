@@ -11,7 +11,9 @@ export class InfoPanel {
   private readonly closeButton: HTMLButtonElement;
   private readonly exhibitPanel: HTMLElement;
   private readonly exhibitTitle: HTMLElement;
+  private readonly exhibitCategory: HTMLElement;
   private readonly exhibitDescription: HTMLElement;
+  private readonly exhibitFeatures: HTMLElement;
   private readonly exhibitCloseButton: HTMLButtonElement;
   private readonly onResetView: () => void;
   private readonly onExitExhibit: () => void;
@@ -62,11 +64,19 @@ export class InfoPanel {
         <p class="zone-panel-description"></p>
       </section>
       <section class="exhibit-panel" aria-label="Exhibit viewing controls" aria-hidden="true">
-        <p class="exhibit-mode-label">EXHIBIT VIEW · ZONE_01</p>
+        <p class="exhibit-mode-label">FOCUSED EXHIBIT · ZONE_01</p>
+        <p class="exhibit-category"></p>
         <h2 class="exhibit-title"></h2>
         <p class="exhibit-description"></p>
+        <div class="exhibit-feature-section">
+          <p class="exhibit-section-label">Key features</p>
+          <ul class="exhibit-features"></ul>
+        </div>
         <div class="exhibit-controls"><span>Drag</span> rotate equipment <span>Wheel</span> zoom</div>
-        <button class="exhibit-close" type="button"><span>←</span> Return to showroom</button>
+        <div class="exhibit-actions">
+          <button class="exhibit-close" type="button"><span>←</span> Return to showroom</button>
+          <button class="exhibit-specification" type="button" disabled>Technical brief</button>
+        </div>
       </section>
     `;
     container.append(this.element);
@@ -83,8 +93,10 @@ export class InfoPanel {
     if (!closeButton) throw new Error('Zone detail close button was not created.');
     this.closeButton = closeButton;
     this.exhibitPanel = this.getRequiredElement('.exhibit-panel');
+    this.exhibitCategory = this.getRequiredElement('.exhibit-category');
     this.exhibitTitle = this.getRequiredElement('.exhibit-title');
     this.exhibitDescription = this.getRequiredElement('.exhibit-description');
+    this.exhibitFeatures = this.getRequiredElement('.exhibit-features');
     const exhibitCloseButton = this.element.querySelector<HTMLButtonElement>('.exhibit-close');
     if (!exhibitCloseButton) throw new Error('Exhibit close button was not created.');
     this.exhibitCloseButton = exhibitCloseButton;
@@ -122,7 +134,13 @@ export class InfoPanel {
     this.hideZoneDetails();
     this.showHotspotLabel(null, null);
     this.exhibitTitle.textContent = metadata.title;
+    this.exhibitCategory.textContent = metadata.category ?? 'ENVIRONMENTAL TECHNOLOGY';
     this.exhibitDescription.textContent = metadata.description;
+    this.exhibitFeatures.replaceChildren(...(metadata.keyFeatures ?? []).map((feature) => {
+      const item = document.createElement('li');
+      item.textContent = feature;
+      return item;
+    }));
     this.exhibitPanel.classList.add('is-visible');
     this.exhibitPanel.setAttribute('aria-hidden', 'false');
     this.element.classList.add('is-exhibit-mode');

@@ -4,6 +4,8 @@ export interface ExhibitMetadata {
   readonly id: string;
   readonly title: string;
   readonly description: string;
+  readonly category?: string;
+  readonly keyFeatures?: readonly string[];
   readonly impactLabel?: string;
 }
 

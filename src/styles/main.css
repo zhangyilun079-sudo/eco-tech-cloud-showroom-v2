@@ -54,16 +54,25 @@ h1 em { color: #9fe0b7; font-style: normal; }
 .zone-panel-description { color: rgba(226, 240, 229, .7); font-size: 13px; line-height: 1.9; white-space: pre-line; margin: 0; }
 
 .info-panel.is-exhibit-mode .intro, .info-panel.is-exhibit-mode .controls-hint { opacity: 0; visibility: hidden; transition: opacity .3s, visibility .3s; }
-.exhibit-panel { position: absolute; left: 52px; top: 50%; width: 330px; padding: 25px 26px; border-left: 1px solid rgba(139, 238, 190, .5); opacity: 0; visibility: hidden; transform: translate(-14px, -50%); transition: opacity .35s, transform .35s, visibility .35s; }
+.exhibit-panel { position: absolute; left: 52px; top: 50%; width: 360px; padding: 28px 28px 27px; border: 1px solid rgba(139, 238, 190, .2); border-left: 2px solid rgba(139, 238, 190, .65); border-radius: 2px 14px 14px 2px; background: linear-gradient(145deg, rgba(8, 27, 22, .91), rgba(6, 20, 17, .78)); box-shadow: 0 24px 70px rgba(0, 0, 0, .3); backdrop-filter: blur(18px); opacity: 0; visibility: hidden; transform: translate(-14px, -50%); transition: opacity .35s, transform .35s, visibility .35s; }
 .exhibit-panel.is-visible { opacity: 1; visibility: visible; transform: translate(0, -50%); pointer-events: auto; }
 .exhibit-mode-label { color: #8ee0b7; font-size: 9px; font-weight: 600; letter-spacing: .2em; margin: 0 0 15px; }
-.exhibit-title { color: #f1f7f2; font: 400 27px/1.35 Manrope, sans-serif; margin: 0 0 14px; }
-.exhibit-description { color: rgba(226, 240, 229, .68); font-size: 12px; line-height: 1.7; margin: 0 0 25px; }
+.exhibit-category { color: rgba(198, 232, 215, .52); font-size: 9px; letter-spacing: .14em; margin: 0 0 9px; }
+.exhibit-title { color: #f1f7f2; font: 400 27px/1.35 Manrope, sans-serif; margin: 0 0 12px; }
+.exhibit-description { color: rgba(226, 240, 229, .68); font-size: 12px; line-height: 1.7; margin: 0 0 20px; }
+.exhibit-feature-section { padding: 16px 0; border-top: 1px solid rgba(160, 218, 188, .14); border-bottom: 1px solid rgba(160, 218, 188, .14); }
+.exhibit-section-label { color: #a4ddbd; font-size: 9px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; margin: 0 0 11px; }
+.exhibit-features { display: grid; gap: 8px; list-style: none; padding: 0; margin: 0; }
+.exhibit-features li { position: relative; padding-left: 15px; color: rgba(231, 242, 233, .76); font-size: 11px; }
+.exhibit-features li::before { content: ''; position: absolute; left: 0; top: .43em; width: 5px; height: 5px; border: 1px solid #79cda2; border-radius: 50%; }
 .exhibit-controls { display: flex; gap: 8px; color: rgba(226, 240, 229, .48); font-size: 10px; margin-bottom: 22px; }
+.exhibit-feature-section + .exhibit-controls { margin-top: 18px; }
 .exhibit-controls span { color: #a8e5c2; }
+.exhibit-actions { display: flex; align-items: center; gap: 9px; }
 .exhibit-close { border: 1px solid rgba(142, 224, 183, .35); border-radius: 99px; padding: 10px 15px; color: #eaf6ed; background: rgba(9, 33, 25, .7); font: 500 10px 'DM Sans', sans-serif; letter-spacing: .05em; cursor: pointer; }
 .exhibit-close span { color: #8ee0b7; margin-right: 8px; }
 .exhibit-close:hover { border-color: #8ee0b7; background: rgba(49, 100, 76, .55); }
+.exhibit-specification { border: 0; padding: 10px 4px; color: rgba(211, 231, 218, .35); background: transparent; font: 500 9px 'DM Sans', sans-serif; letter-spacing: .06em; text-transform: uppercase; }
 
 @media (max-width: 680px) {
   .info-panel { padding: 26px 24px; }
