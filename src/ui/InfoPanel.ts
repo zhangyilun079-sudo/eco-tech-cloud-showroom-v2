@@ -26,6 +26,7 @@ export class InfoPanel {
   private readonly processPreviousButton: HTMLButtonElement;
   private readonly processNextButton: HTMLButtonElement;
   private readonly processExitButton: HTMLButtonElement;
+  private readonly processAutoButton: HTMLButtonElement;
   private readonly componentLabel: HTMLElement;
   private readonly componentPanel: HTMLElement;
   private readonly componentName: HTMLElement;
@@ -39,6 +40,7 @@ export class InfoPanel {
   private readonly onToggleProcess: () => void;
   private readonly onPreviousProcessStep: () => void;
   private readonly onNextProcessStep: () => void;
+  private readonly onToggleProcessAutoPlay: () => void;
   private hasHoveredHotspot = false;
   private readonly handleKeyDown = (event: KeyboardEvent): void => {
     if (event.key.toLowerCase() !== 'r' || event.repeat || this.isTypingTarget(event.target)) return;
@@ -52,6 +54,7 @@ export class InfoPanel {
     onToggleProcess: () => void;
     onPreviousProcessStep: () => void;
     onNextProcessStep: () => void;
+    onToggleProcessAutoPlay: () => void;
   }) {
     this.onResetView = callbacks.onResetView;
     this.onExitExhibit = callbacks.onExitExhibit;
@@ -59,6 +62,7 @@ export class InfoPanel {
     this.onToggleProcess = callbacks.onToggleProcess;
     this.onPreviousProcessStep = callbacks.onPreviousProcessStep;
     this.onNextProcessStep = callbacks.onNextProcessStep;
+    this.onToggleProcessAutoPlay = callbacks.onToggleProcessAutoPlay;
     this.element = document.createElement('aside');
     this.element.className = 'info-panel';
     this.element.setAttribute('aria-label', '展厅信息');
@@ -114,6 +118,7 @@ export class InfoPanel {
         <p class="process-description"></p>
         <div class="process-navigation">
           <button class="process-previous" type="button">← 上一步</button>
+          <button class="process-auto" type="button" aria-pressed="false">自动演示</button>
           <button class="process-next" type="button">下一步 →</button>
         </div>
       </section>
@@ -166,10 +171,12 @@ export class InfoPanel {
     const processPreviousButton = this.element.querySelector<HTMLButtonElement>('.process-previous');
     const processNextButton = this.element.querySelector<HTMLButtonElement>('.process-next');
     const processExitButton = this.element.querySelector<HTMLButtonElement>('.process-exit');
-    if (!processPreviousButton || !processNextButton || !processExitButton) throw new Error('Process controls were not created.');
+    const processAutoButton = this.element.querySelector<HTMLButtonElement>('.process-auto');
+    if (!processPreviousButton || !processNextButton || !processExitButton || !processAutoButton) throw new Error('Process controls were not created.');
     this.processPreviousButton = processPreviousButton;
     this.processNextButton = processNextButton;
     this.processExitButton = processExitButton;
+    this.processAutoButton = processAutoButton;
     this.componentLabel = this.getRequiredElement('.component-label');
     this.componentPanel = this.getRequiredElement('.component-panel');
     this.componentName = this.getRequiredElement('.component-panel-name');
@@ -187,6 +194,7 @@ export class InfoPanel {
     this.processPreviousButton.addEventListener('click', callbacks.onPreviousProcessStep);
     this.processNextButton.addEventListener('click', callbacks.onNextProcessStep);
     this.processExitButton.addEventListener('click', callbacks.onToggleProcess);
+    this.processAutoButton.addEventListener('click', callbacks.onToggleProcessAutoPlay);
     this.componentCloseButton.addEventListener('click', this.hideComponent);
     window.addEventListener('keydown', this.handleKeyDown);
   }
@@ -264,6 +272,12 @@ export class InfoPanel {
     this.processNextButton.disabled = step.isLast;
   }
 
+  public setProcessAutoPlaying(active: boolean): void {
+    this.processAutoButton.textContent = active ? '暂停演示' : '自动演示';
+    this.processAutoButton.setAttribute('aria-pressed', String(active));
+    this.processAutoButton.classList.toggle('is-active', active);
+  }
+
   public showComponentLabel(title: string | null): void {
     this.componentLabel.querySelector<HTMLElement>('.component-label-title')!.textContent = title ?? '';
     this.componentLabel.classList.toggle('has-component', title !== null);
@@ -304,6 +318,7 @@ export class InfoPanel {
     this.processPreviousButton.removeEventListener('click', this.onPreviousProcessStep);
     this.processNextButton.removeEventListener('click', this.onNextProcessStep);
     this.processExitButton.removeEventListener('click', this.onToggleProcess);
+    this.processAutoButton.removeEventListener('click', this.onToggleProcessAutoPlay);
     this.componentCloseButton.removeEventListener('click', this.hideComponent);
     this.element.remove();
   }

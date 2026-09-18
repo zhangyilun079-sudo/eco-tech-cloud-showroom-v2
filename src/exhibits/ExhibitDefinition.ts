@@ -50,6 +50,13 @@ export interface ExhibitProcessStepDefinition {
   readonly description: string;
   /** Component ids that participate in this stage. */
   readonly relatedComponents: readonly string[];
+  /** Local-space waypoints followed by the animated process indicator. */
+  readonly processPath: readonly ExhibitVector3[];
+  readonly visualState: {
+    readonly color: string;
+    readonly particleSpeed?: number;
+    readonly label: string;
+  };
 }
 
 /** The content and scene contract shared by exhibit UI, viewers, and loaders. */
