@@ -2,6 +2,7 @@ import { Clock, Color, Fog, Scene } from 'three';
 import { ExhibitRegistry } from '../exhibits/ExhibitRegistry';
 import { ExhibitShowcase } from '../exhibits/ExhibitShowcase';
 import { ExhibitViewer } from '../exhibits/ExhibitViewer';
+import { ComponentInteractionManager } from '../exhibits/components/ComponentInteractionManager';
 import { mvrWastewaterTreatmentDefinition } from '../exhibits/data/mvrWastewaterTreatment';
 import { MvrWastewaterTreatmentModel } from '../exhibits/models/MvrWastewaterTreatmentModel';
 import { HotspotManager } from '../interaction/HotspotManager';
@@ -22,6 +23,7 @@ export class ShowroomApplication {
   private readonly infoPanel: InfoPanel;
   private readonly hotspots: HotspotManager;
   private readonly exhibitViewer: ExhibitViewer;
+  private readonly componentInteractions: ComponentInteractionManager;
   private readonly viewMode = new ViewModeState();
   private readonly clock = new Clock();
   private animationFrameId: number | null = null;
@@ -35,6 +37,11 @@ export class ShowroomApplication {
       onResetView: () => this.camera.reset(),
       onExitExhibit: () => this.exitExhibitMode(),
     });
+    this.componentInteractions = new ComponentInteractionManager(
+      this.camera.camera,
+      this.renderer.renderer.domElement,
+      this.infoPanel,
+    );
     this.exhibitViewer = new ExhibitViewer(
       this.camera,
       this.renderer.renderer.domElement,
@@ -53,6 +60,7 @@ export class ShowroomApplication {
         if (zone.id !== 'ZONE_01') return false;
         this.hotspots.setEnabled(false);
         this.exhibitViewer.enter(mvrExhibit, zone.hotspotPosition);
+        this.componentInteractions.activate(mvrExhibit);
         return true;
       },
     );
@@ -84,6 +92,7 @@ export class ShowroomApplication {
     this.exhibits.dispose();
     this.exhibitShowcase.dispose();
     this.hotspots.dispose();
+    this.componentInteractions.dispose();
     this.exhibitViewer.dispose();
     this.infoPanel.dispose();
     this.camera.dispose();
@@ -101,6 +110,7 @@ export class ShowroomApplication {
     const delta = Math.min(this.clock.getDelta(), 0.1);
     this.camera.update();
     this.exhibitViewer.update(delta);
+    this.componentInteractions.update();
     this.exhibits.update(delta);
     this.hotspots.update(delta);
     this.renderer.renderer.render(this.scene, this.camera.camera);
@@ -108,6 +118,7 @@ export class ShowroomApplication {
   };
 
   private exitExhibitMode(): void {
+    this.componentInteractions.deactivate();
     this.exhibitViewer.exit();
   }
 }

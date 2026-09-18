@@ -8,6 +8,7 @@ canvas:active { cursor: grabbing; }
 canvas.is-hotspot-hovered, canvas.is-hotspot-hovered:active { cursor: pointer; }
 canvas.is-exhibit-mode { cursor: grab; }
 canvas.is-exhibit-mode:active { cursor: grabbing; }
+canvas.is-component-hovered, canvas.is-component-hovered:active { cursor: pointer; }
 
 #app::after {
   content: ''; position: fixed; inset: 0; pointer-events: none;
@@ -74,6 +75,25 @@ h1 em { color: #9fe0b7; font-style: normal; }
 .exhibit-close:hover { border-color: #8ee0b7; background: rgba(49, 100, 76, .55); }
 .exhibit-specification { border: 0; padding: 10px 4px; color: rgba(211, 231, 218, .35); background: transparent; font: 500 9px 'DM Sans', sans-serif; letter-spacing: .06em; text-transform: uppercase; }
 
+.component-label { position: fixed; z-index: 4; display: flex; align-items: center; gap: 9px; padding: 9px 13px; border: 1px solid rgba(157, 255, 208, .48); border-radius: 7px; background: rgba(4, 20, 15, .9); box-shadow: 0 10px 32px rgba(0, 0, 0, .34); backdrop-filter: blur(12px); opacity: 0; visibility: hidden; transform: translate(-50%, calc(-100% - 18px)); transition: opacity .12s, visibility .12s; }
+.component-label::after { content: ''; position: absolute; top: 100%; left: 50%; height: 14px; border-left: 1px solid rgba(157, 255, 208, .55); }
+.component-label.is-visible { opacity: 1; visibility: visible; }
+.component-label-marker { width: 6px; height: 6px; border-radius: 50%; background: #92ebbc; box-shadow: 0 0 9px #73dba4; }
+.component-label-title { color: #f2faf4; font-size: 11px; font-weight: 500; }
+.component-label small { color: rgba(215, 238, 223, .48); font-size: 8px; letter-spacing: .05em; text-transform: uppercase; }
+
+.component-panel { position: absolute; right: 52px; top: 50%; width: 330px; padding: 27px; border: 1px solid rgba(142, 224, 183, .28); border-radius: 14px; background: linear-gradient(145deg, rgba(8, 29, 22, .96), rgba(5, 18, 14, .91)); box-shadow: 0 24px 70px rgba(0, 0, 0, .38); backdrop-filter: blur(18px); opacity: 0; visibility: hidden; transform: translate(16px, -50%); transition: opacity .22s, transform .22s, visibility .22s; }
+.component-panel.is-visible { opacity: 1; visibility: visible; transform: translate(0, -50%); pointer-events: auto; }
+.component-panel-close { position: absolute; right: 14px; top: 10px; border: 0; color: rgba(235, 248, 238, .65); background: transparent; font: 300 24px Manrope, sans-serif; cursor: pointer; }
+.component-panel-kicker, .component-panel-feature-label { color: #8ee0b7; font-size: 9px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; margin: 0 0 13px; }
+.component-panel-name { padding-right: 16px; color: #f1f7f2; font: 400 24px/1.3 Manrope, sans-serif; margin: 0 0 9px; }
+.component-panel-role { color: #9cdeb9; font-size: 11px; letter-spacing: .04em; margin: 0 0 18px; }
+.component-panel-description { padding-top: 17px; border-top: 1px solid rgba(160, 218, 188, .15); color: rgba(226, 240, 229, .72); font-size: 12px; line-height: 1.7; margin: 0 0 20px; }
+.component-panel-feature-label { margin-bottom: 10px; }
+.component-panel-features { display: grid; gap: 8px; list-style: none; padding: 0; margin: 0; }
+.component-panel-features li { padding-left: 14px; position: relative; color: rgba(231, 242, 233, .75); font-size: 11px; }
+.component-panel-features li::before { content: '—'; position: absolute; left: 0; color: #79cda2; }
+
 @media (max-width: 680px) {
   .info-panel { padding: 26px 24px; }
   .intro { margin-bottom: 15vh; }
@@ -88,4 +108,6 @@ h1 em { color: #9fe0b7; font-style: normal; }
   .zone-panel.is-visible { transform: translateY(0); }
   .exhibit-panel { left: 24px; top: auto; bottom: 70px; width: calc(100vw - 48px); transform: translateY(14px); background: rgba(5, 19, 15, .72); backdrop-filter: blur(12px); }
   .exhibit-panel.is-visible { transform: translateY(0); }
+  .component-panel { right: 24px; top: 90px; width: calc(100vw - 48px); transform: translateY(-12px); }
+  .component-panel.is-visible { transform: translateY(0); }
 }

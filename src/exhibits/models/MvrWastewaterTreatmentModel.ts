@@ -205,12 +205,13 @@ export class MvrWastewaterTreatmentModel implements Exhibit {
     const group = this.component('electrical-control-cabinet');
     this.box(group, this.geometry(new BoxGeometry(1.15, 1.65, 0.48)), this.cabinet, [2.25, 1.02, 1.18], true);
     this.box(group, this.geometry(new BoxGeometry(0.025, 1.5, 0.38)), this.darkSteel, [2.25, 1.02, 1.435]);
-    this.box(group, this.geometry(new BoxGeometry(0.54, 0.32, 0.025)), this.processBlue, [2.25, 1.38, 1.46]);
+    const monitoring = this.component('intelligent-monitoring-system');
+    this.box(monitoring, this.geometry(new BoxGeometry(0.54, 0.32, 0.025)), this.processBlue, [2.25, 1.38, 1.46]);
     const light = this.geometry(new SphereGeometry(0.045, 8, 6));
     for (const x of [2.05, 2.25, 2.45]) {
       const lamp = new Mesh(light, this.indicator);
       lamp.position.set(x, 0.86, 1.47);
-      group.add(lamp);
+      monitoring.add(lamp);
     }
   }
 
