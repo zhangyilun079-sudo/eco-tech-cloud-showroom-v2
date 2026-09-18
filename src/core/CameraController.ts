@@ -23,8 +23,9 @@ export class CameraController {
 
     this.controls = new OrbitControls(this.camera, canvas);
     this.controls.target.copy(INITIAL_TARGET);
-    this.controls.enableDamping = true;
-    this.controls.dampingFactor = 0.075;
+    // Direct manipulation is intentional: the view must stop with the pointer,
+    // rather than continuing to drift around precision exhibits.
+    this.controls.enableDamping = false;
     this.controls.minDistance = 5;
     this.controls.maxDistance = 27;
     this.controls.maxPolarAngle = Math.PI * 0.48;
