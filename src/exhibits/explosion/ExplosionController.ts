@@ -56,10 +56,11 @@ export class ExplosionController {
     getTarget: (transform: ComponentTransform) => Vector3,
     durationSeconds?: number,
   ): void {
-    const transitions: ExplosionTransformTransition[] = this.transforms.map((transform) => ({
+    const transitions: ExplosionTransformTransition[] = this.transforms.map((transform, index) => ({
       object: transform.object,
       from: transform.object.position.clone(),
       to: getTarget(transform).clone(),
+      delay: this.transforms.length > 1 ? index / (this.transforms.length - 1) * 0.24 : 0,
     }));
     this.animation.start(transitions, durationSeconds);
   }

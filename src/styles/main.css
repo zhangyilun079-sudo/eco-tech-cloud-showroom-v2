@@ -65,6 +65,9 @@ canvas.is-component-hovered, canvas.is-component-hovered:active { cursor: pointe
 .exhibit-close { border: 1px solid rgba(142, 224, 183, .35); border-radius: 99px; padding: 10px 15px; color: #eaf6ed; background: rgba(9, 33, 25, .7); font: 500 10px 'DM Sans', sans-serif; letter-spacing: .05em; cursor: pointer; }
 .exhibit-close span { color: #8ee0b7; margin-right: 8px; }
 .exhibit-close:hover { border-color: #8ee0b7; background: rgba(49, 100, 76, .55); }
+.exhibit-explosion { border: 1px solid rgba(142, 224, 183, .48); border-radius: 99px; padding: 10px 15px; color: #092119; background: #8ee0b7; font: 600 10px 'DM Sans', sans-serif; letter-spacing: .05em; cursor: pointer; transition: color .2s, background .2s, border-color .2s, box-shadow .2s; }
+.exhibit-explosion:hover { background: #acf0ca; box-shadow: 0 0 22px rgba(112, 224, 168, .2); }
+.exhibit-explosion.is-active { color: #dff7e9; background: rgba(25, 75, 54, .75); border-color: #8ee0b7; }
 .exhibit-specification { border: 0; padding: 10px 4px; color: rgba(211, 231, 218, .35); background: transparent; font: 500 9px 'DM Sans', sans-serif; letter-spacing: .06em; text-transform: uppercase; }
 
 .component-label { position: fixed; z-index: 4; display: flex; align-items: center; gap: 9px; padding: 9px 13px; border: 1px solid rgba(157, 255, 208, .48); border-radius: 7px; background: rgba(4, 20, 15, .9); box-shadow: 0 10px 32px rgba(0, 0, 0, .34); backdrop-filter: blur(12px); opacity: 0; visibility: hidden; transform: translate(-50%, calc(-100% - 18px)); transition: opacity .12s, visibility .12s; }

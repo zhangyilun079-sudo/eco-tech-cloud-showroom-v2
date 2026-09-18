@@ -16,6 +16,7 @@ export class InfoPanel {
   private readonly exhibitDescription: HTMLElement;
   private readonly exhibitFeatures: HTMLElement;
   private readonly exhibitCloseButton: HTMLButtonElement;
+  private readonly explosionButton: HTMLButtonElement;
   private readonly componentLabel: HTMLElement;
   private readonly componentPanel: HTMLElement;
   private readonly componentName: HTMLElement;
@@ -25,15 +26,21 @@ export class InfoPanel {
   private readonly componentCloseButton: HTMLButtonElement;
   private readonly onResetView: () => void;
   private readonly onExitExhibit: () => void;
+  private readonly onToggleExplosion: () => void;
   private hasHoveredHotspot = false;
   private readonly handleKeyDown = (event: KeyboardEvent): void => {
     if (event.key.toLowerCase() !== 'r' || event.repeat || this.isTypingTarget(event.target)) return;
     this.onResetView();
   };
 
-  public constructor(container: HTMLElement, callbacks: { onResetView: () => void; onExitExhibit: () => void }) {
+  public constructor(container: HTMLElement, callbacks: {
+    onResetView: () => void;
+    onExitExhibit: () => void;
+    onToggleExplosion: () => void;
+  }) {
     this.onResetView = callbacks.onResetView;
     this.onExitExhibit = callbacks.onExitExhibit;
+    this.onToggleExplosion = callbacks.onToggleExplosion;
     this.element = document.createElement('aside');
     this.element.className = 'info-panel';
     this.element.setAttribute('aria-label', '展厅信息');
@@ -77,6 +84,7 @@ export class InfoPanel {
         <div class="exhibit-controls"><span>拖动</span>旋转设备 <span>滚轮</span>缩放视图</div>
         <div class="exhibit-actions">
           <button class="exhibit-close" type="button"><span>←</span> 返回展厅</button>
+          <button class="exhibit-explosion" type="button" aria-pressed="false">拆解展示</button>
           <button class="exhibit-specification" type="button" disabled>技术资料</button>
         </div>
       </section>
@@ -116,6 +124,9 @@ export class InfoPanel {
     const exhibitCloseButton = this.element.querySelector<HTMLButtonElement>('.exhibit-close');
     if (!exhibitCloseButton) throw new Error('Exhibit close button was not created.');
     this.exhibitCloseButton = exhibitCloseButton;
+    const explosionButton = this.element.querySelector<HTMLButtonElement>('.exhibit-explosion');
+    if (!explosionButton) throw new Error('Exploded view button was not created.');
+    this.explosionButton = explosionButton;
     this.componentLabel = this.getRequiredElement('.component-label');
     this.componentPanel = this.getRequiredElement('.component-panel');
     this.componentName = this.getRequiredElement('.component-panel-name');
@@ -128,6 +139,7 @@ export class InfoPanel {
     this.resetButton.addEventListener('click', callbacks.onResetView);
     this.closeButton.addEventListener('click', this.hideZoneDetails);
     this.exhibitCloseButton.addEventListener('click', callbacks.onExitExhibit);
+    this.explosionButton.addEventListener('click', callbacks.onToggleExplosion);
     this.componentCloseButton.addEventListener('click', this.hideComponent);
     window.addEventListener('keydown', this.handleKeyDown);
   }
@@ -178,6 +190,13 @@ export class InfoPanel {
     this.exhibitPanel.classList.remove('is-visible');
     this.exhibitPanel.setAttribute('aria-hidden', 'true');
     this.element.classList.remove('is-exhibit-mode');
+    this.setExploded(false);
+  }
+
+  public setExploded(exploded: boolean): void {
+    this.explosionButton.textContent = exploded ? '恢复结构' : '拆解展示';
+    this.explosionButton.setAttribute('aria-pressed', String(exploded));
+    this.explosionButton.classList.toggle('is-active', exploded);
   }
 
   public showComponentLabel(title: string | null): void {
@@ -215,6 +234,7 @@ export class InfoPanel {
     this.resetButton.replaceWith(this.resetButton.cloneNode(true));
     this.closeButton.removeEventListener('click', this.hideZoneDetails);
     this.exhibitCloseButton.removeEventListener('click', this.onExitExhibit);
+    this.explosionButton.removeEventListener('click', this.onToggleExplosion);
     this.componentCloseButton.removeEventListener('click', this.hideComponent);
     this.element.remove();
   }

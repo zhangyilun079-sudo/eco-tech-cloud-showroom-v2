@@ -2,6 +2,7 @@ import { Clock, Color, Fog, Scene } from 'three';
 import { ExhibitRegistry } from '../exhibits/ExhibitRegistry';
 import { ExhibitShowcase } from '../exhibits/ExhibitShowcase';
 import { ExhibitViewer } from '../exhibits/ExhibitViewer';
+import { ExplosionController } from '../exhibits/explosion/ExplosionController';
 import { ComponentInteractionManager } from '../exhibits/components/ComponentInteractionManager';
 import { mvrWastewaterTreatmentDefinition } from '../exhibits/data/mvrWastewaterTreatment';
 import { MvrWastewaterTreatmentModel } from '../exhibits/models/MvrWastewaterTreatmentModel';
@@ -11,7 +12,7 @@ import { InfoPanel } from '../ui/InfoPanel';
 import { CameraController } from './CameraController';
 import { LightingRig } from './LightingRig';
 import { RendererManager } from './RendererManager';
-import { ViewModeState } from './ViewMode';
+import { ViewMode, ViewModeState } from './ViewMode';
 
 export class ShowroomApplication {
   private readonly scene = new Scene();
@@ -25,6 +26,7 @@ export class ShowroomApplication {
   private readonly exhibitViewer: ExhibitViewer;
   private readonly componentInteractions: ComponentInteractionManager;
   private readonly viewMode = new ViewModeState();
+  private readonly explosionController: ExplosionController;
   private readonly clock = new Clock();
   private animationFrameId: number | null = null;
 
@@ -33,9 +35,11 @@ export class ShowroomApplication {
     this.camera = new CameraController(this.renderer.renderer.domElement);
     const mvrExhibit = new MvrWastewaterTreatmentModel(mvrWastewaterTreatmentDefinition);
     this.exhibits.register(mvrExhibit);
+    this.explosionController = new ExplosionController(mvrExhibit.object, mvrExhibit.metadata);
     this.infoPanel = new InfoPanel(container, {
       onResetView: () => this.camera.reset(),
       onExitExhibit: () => this.exitExhibitMode(),
+      onToggleExplosion: () => this.toggleExplodedView(),
     });
     this.componentInteractions = new ComponentInteractionManager(
       this.camera.camera,
@@ -110,6 +114,7 @@ export class ShowroomApplication {
     const delta = Math.min(this.clock.getDelta(), 0.1);
     this.camera.update();
     this.exhibitViewer.update(delta);
+    this.explosionController.update(delta);
     this.componentInteractions.update();
     this.exhibits.update(delta);
     this.hotspots.update(delta);
@@ -118,7 +123,21 @@ export class ShowroomApplication {
   };
 
   private exitExhibitMode(): void {
+    this.explosionController.collapse(0);
+    this.infoPanel.setExploded(false);
     this.componentInteractions.deactivate();
     this.exhibitViewer.exit();
+  }
+
+  private toggleExplodedView(): void {
+    if (this.viewMode.mode === ViewMode.EXHIBIT) {
+      this.viewMode.set(ViewMode.EXPLODED);
+      this.explosionController.explode();
+      this.infoPanel.setExploded(true);
+    } else if (this.viewMode.mode === ViewMode.EXPLODED) {
+      this.viewMode.set(ViewMode.EXHIBIT);
+      this.explosionController.collapse();
+      this.infoPanel.setExploded(false);
+    }
   }
 }

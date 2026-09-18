@@ -1,6 +1,7 @@
 export const ViewMode = {
   SHOWROOM: 'SHOWROOM',
   EXHIBIT: 'EXHIBIT',
+  EXPLODED: 'EXPLODED',
 } as const;
 
 export type ViewMode = typeof ViewMode[keyof typeof ViewMode];

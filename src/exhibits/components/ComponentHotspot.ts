@@ -41,7 +41,9 @@ export class ComponentHotspot {
 
   public getWorldAnchor(target: Vector3): Vector3 {
     const position = this.definition.label.anchorPosition;
-    return target.set(position.x, position.y, position.z).applyMatrix4(this.object.parent?.matrixWorld ?? this.object.matrixWorld);
+    // Component definitions use model-local coordinates. Applying the component's
+    // own matrix makes the label follow it while the exploded view is in motion.
+    return target.set(position.x, position.y, position.z).applyMatrix4(this.object.matrixWorld);
   }
 
   public dispose(): void {
