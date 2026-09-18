@@ -97,14 +97,14 @@ export class ExhibitShowcase extends Group {
       roughness: 0.3, metalness: 0.7,
     }));
 
-    const pedestal = new Mesh(this.keepGeometry(new CylinderGeometry(1.7, 1.95, 0.38, 48)), bodyMaterial);
+    const pedestal = new Mesh(this.keepGeometry(new CylinderGeometry(3.45, 3.7, 0.38, 48)), bodyMaterial);
     pedestal.name = 'Professional exhibit pedestal';
     pedestal.position.y = -0.2;
     pedestal.castShadow = true;
     pedestal.receiveShadow = true;
     this.add(pedestal);
 
-    const illuminatedTrim = new Mesh(this.keepGeometry(new RingGeometry(1.62, 1.72, 64)), trimMaterial);
+    const illuminatedTrim = new Mesh(this.keepGeometry(new RingGeometry(3.35, 3.47, 64)), trimMaterial);
     illuminatedTrim.rotation.x = -Math.PI / 2;
     illuminatedTrim.position.y = 0.005;
     this.add(illuminatedTrim);
