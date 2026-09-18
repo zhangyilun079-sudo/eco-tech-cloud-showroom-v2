@@ -1,3 +1,4 @@
+import { ViewMode, type ViewMode as ViewModeValue } from '../core/ViewMode';
 import type { ExhibitMetadata } from '../exhibits/Exhibit';
 import type { ExhibitComponentDefinition } from '../exhibits/ExhibitDefinition';
 import type { ProcessStep } from '../exhibits/process/ProcessStep';
@@ -5,6 +6,7 @@ import type { ProcessStep } from '../exhibits/process/ProcessStep';
 export class InfoPanel {
   private readonly element: HTMLElement;
   private readonly resetButton: HTMLButtonElement;
+  private readonly navigationList: HTMLUListElement;
   private readonly hotspotLabel: HTMLElement;
   private readonly zonePanel: HTMLElement;
   private readonly zoneCode: HTMLElement;
@@ -16,10 +18,6 @@ export class InfoPanel {
   private readonly exhibitCategory: HTMLElement;
   private readonly exhibitDescription: HTMLElement;
   private readonly exhibitFeatures: HTMLElement;
-  private readonly exhibitCloseButton: HTMLButtonElement;
-  private readonly explosionButton: HTMLButtonElement;
-  private readonly processButton: HTMLButtonElement;
-  private readonly technologyButton: HTMLButtonElement;
   private readonly processPanel: HTMLElement;
   private readonly processProgress: HTMLElement;
   private readonly processTitle: HTMLElement;
@@ -36,13 +34,10 @@ export class InfoPanel {
   private readonly componentFeatures: HTMLElement;
   private readonly componentCloseButton: HTMLButtonElement;
   private readonly onResetView: () => void;
-  private readonly onExitExhibit: () => void;
-  private readonly onToggleExplosion: () => void;
   private readonly onToggleProcess: () => void;
   private readonly onPreviousProcessStep: () => void;
   private readonly onNextProcessStep: () => void;
   private readonly onToggleProcessAutoPlay: () => void;
-  private readonly onToggleTechnology: () => void;
   private hasHoveredHotspot = false;
   private readonly handleKeyDown = (event: KeyboardEvent): void => {
     if (event.key.toLowerCase() !== 'r' || event.repeat || this.isTypingTarget(event.target)) return;
@@ -51,22 +46,16 @@ export class InfoPanel {
 
   public constructor(container: HTMLElement, callbacks: {
     onResetView: () => void;
-    onExitExhibit: () => void;
-    onToggleExplosion: () => void;
     onToggleProcess: () => void;
     onPreviousProcessStep: () => void;
     onNextProcessStep: () => void;
     onToggleProcessAutoPlay: () => void;
-    onToggleTechnology: () => void;
   }) {
     this.onResetView = callbacks.onResetView;
-    this.onExitExhibit = callbacks.onExitExhibit;
-    this.onToggleExplosion = callbacks.onToggleExplosion;
     this.onToggleProcess = callbacks.onToggleProcess;
     this.onPreviousProcessStep = callbacks.onPreviousProcessStep;
     this.onNextProcessStep = callbacks.onNextProcessStep;
     this.onToggleProcessAutoPlay = callbacks.onToggleProcessAutoPlay;
-    this.onToggleTechnology = callbacks.onToggleTechnology;
     this.element = document.createElement('aside');
     this.element.className = 'info-panel';
     this.element.setAttribute('aria-label', '展厅信息');
@@ -78,9 +67,9 @@ export class InfoPanel {
           <div>
             <strong>操作指引</strong>
             <ul aria-label="展厅操作方式">
-              <li><kbd>左键</kbd><span>旋转视角</span></li>
-              <li><kbd>右键</kbd><span>平移视角</span></li>
-              <li><kbd>滚轮</kbd><span>缩放视图</span></li>
+              <li><kbd>鼠标左键：</kbd><span>旋转视角</span></li>
+              <li><kbd>鼠标右键：</kbd><span>平移视角</span></li>
+              <li><kbd>滚轮：</kbd><span>缩放视图</span></li>
             </ul>
           </div>
         </div>
@@ -105,13 +94,6 @@ export class InfoPanel {
         <div class="exhibit-feature-section">
           <p class="exhibit-section-label">核心特点</p>
           <ul class="exhibit-features"></ul>
-        </div>
-        <div class="exhibit-controls"><span>拖动</span>旋转设备 <span>滚轮</span>缩放视图</div>
-        <div class="exhibit-actions">
-          <button class="exhibit-close" type="button"><span>←</span> 返回展厅</button>
-          <button class="exhibit-explosion" type="button" aria-pressed="false">拆解展示</button>
-          <button class="exhibit-process" type="button" aria-pressed="false">工艺流程</button>
-          <button class="exhibit-technology" type="button" aria-pressed="false">技术成果</button>
         </div>
       </section>
       <section class="process-panel" aria-label="工艺流程" aria-hidden="true">
@@ -145,6 +127,9 @@ export class InfoPanel {
     const resetButton = this.element.querySelector<HTMLButtonElement>('.reset-button');
     if (!resetButton) throw new Error('Reset view button was not created.');
     this.resetButton = resetButton;
+    const navigationList = this.element.querySelector<HTMLUListElement>('.navigation-help ul');
+    if (!navigationList) throw new Error('Navigation guide was not created.');
+    this.navigationList = navigationList;
     this.hotspotLabel = this.getRequiredElement('.hotspot-label');
     this.zonePanel = this.getRequiredElement('.zone-panel');
     this.zoneCode = this.getRequiredElement('.zone-panel-code');
@@ -158,18 +143,6 @@ export class InfoPanel {
     this.exhibitTitle = this.getRequiredElement('.exhibit-title');
     this.exhibitDescription = this.getRequiredElement('.exhibit-description');
     this.exhibitFeatures = this.getRequiredElement('.exhibit-features');
-    const exhibitCloseButton = this.element.querySelector<HTMLButtonElement>('.exhibit-close');
-    if (!exhibitCloseButton) throw new Error('Exhibit close button was not created.');
-    this.exhibitCloseButton = exhibitCloseButton;
-    const explosionButton = this.element.querySelector<HTMLButtonElement>('.exhibit-explosion');
-    if (!explosionButton) throw new Error('Exploded view button was not created.');
-    this.explosionButton = explosionButton;
-    const processButton = this.element.querySelector<HTMLButtonElement>('.exhibit-process');
-    if (!processButton) throw new Error('Process mode button was not created.');
-    this.processButton = processButton;
-    const technologyButton = this.element.querySelector<HTMLButtonElement>('.exhibit-technology');
-    if (!technologyButton) throw new Error('Technology mode button was not created.');
-    this.technologyButton = technologyButton;
     this.processPanel = this.getRequiredElement('.process-panel');
     this.processProgress = this.getRequiredElement('.process-progress');
     this.processTitle = this.getRequiredElement('.process-title');
@@ -194,10 +167,6 @@ export class InfoPanel {
     this.componentCloseButton = componentCloseButton;
     this.resetButton.addEventListener('click', callbacks.onResetView);
     this.closeButton.addEventListener('click', this.hideZoneDetails);
-    this.exhibitCloseButton.addEventListener('click', callbacks.onExitExhibit);
-    this.explosionButton.addEventListener('click', callbacks.onToggleExplosion);
-    this.processButton.addEventListener('click', callbacks.onToggleProcess);
-    this.technologyButton.addEventListener('click', callbacks.onToggleTechnology);
     this.processPreviousButton.addEventListener('click', callbacks.onPreviousProcessStep);
     this.processNextButton.addEventListener('click', callbacks.onNextProcessStep);
     this.processExitButton.addEventListener('click', callbacks.onToggleProcess);
@@ -213,6 +182,14 @@ export class InfoPanel {
     if (name) name.textContent = title ?? '';
     this.hasHoveredHotspot = id !== null;
     if (!this.hasHoveredHotspot) this.hotspotLabel.classList.remove('is-visible');
+  }
+
+  public setViewMode(mode: ViewModeValue): void {
+    const isShowroom = mode === ViewMode.SHOWROOM;
+    this.navigationList.setAttribute('aria-label', isShowroom ? '展厅操作方式' : '展品操作方式');
+    this.navigationList.innerHTML = isShowroom
+      ? '<li><kbd>鼠标左键：</kbd><span>旋转视角</span></li><li><kbd>鼠标右键：</kbd><span>平移视角</span></li><li><kbd>滚轮：</kbd><span>缩放视图</span></li>'
+      : '<li><kbd>拖动鼠标：</kbd><span>旋转设备</span></li><li><kbd>滚轮：</kbd><span>缩放设备</span></li>';
   }
 
   /** Positions the HTML label at a hotspot's projected viewport coordinates. */
@@ -252,29 +229,18 @@ export class InfoPanel {
     this.exhibitPanel.classList.remove('is-visible');
     this.exhibitPanel.setAttribute('aria-hidden', 'true');
     this.element.classList.remove('is-exhibit-mode');
-    this.setExploded(false);
     this.setProcessMode(false);
     this.setTechnologyMode(false);
-  }
-
-  public setExploded(exploded: boolean): void {
-    this.explosionButton.textContent = exploded ? '恢复结构' : '拆解展示';
-    this.explosionButton.setAttribute('aria-pressed', String(exploded));
-    this.explosionButton.classList.toggle('is-active', exploded);
   }
 
   public setProcessMode(active: boolean): void {
     this.processPanel.classList.toggle('is-visible', active);
     this.processPanel.setAttribute('aria-hidden', String(!active));
-    this.processButton.classList.toggle('is-active', active);
-    this.processButton.setAttribute('aria-pressed', String(active));
     this.exhibitPanel.classList.toggle('is-process-mode', active);
     if (active) this.hideComponent();
   }
 
   public setTechnologyMode(active: boolean): void {
-    this.technologyButton.classList.toggle('is-active', active);
-    this.technologyButton.setAttribute('aria-pressed', String(active));
     this.exhibitPanel.classList.toggle('is-technology-mode', active);
     if (active) this.hideComponent();
   }
@@ -327,10 +293,6 @@ export class InfoPanel {
     window.removeEventListener('keydown', this.handleKeyDown);
     this.resetButton.replaceWith(this.resetButton.cloneNode(true));
     this.closeButton.removeEventListener('click', this.hideZoneDetails);
-    this.exhibitCloseButton.removeEventListener('click', this.onExitExhibit);
-    this.explosionButton.removeEventListener('click', this.onToggleExplosion);
-    this.processButton.removeEventListener('click', this.onToggleProcess);
-    this.technologyButton.removeEventListener('click', this.onToggleTechnology);
     this.processPreviousButton.removeEventListener('click', this.onPreviousProcessStep);
     this.processNextButton.removeEventListener('click', this.onNextProcessStep);
     this.processExitButton.removeEventListener('click', this.onToggleProcess);
