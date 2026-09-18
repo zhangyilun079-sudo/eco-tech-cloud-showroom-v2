@@ -5,6 +5,7 @@
 html, body, #app { width: 100%; height: 100%; margin: 0; overflow: hidden; }
 canvas { display: block; width: 100%; height: 100%; cursor: grab; }
 canvas:active { cursor: grabbing; }
+canvas.is-hotspot-hovered, canvas.is-hotspot-hovered:active { cursor: pointer; }
 
 #app::after {
   content: ''; position: fixed; inset: 0; pointer-events: none;
@@ -35,6 +36,20 @@ h1 em { color: #9fe0b7; font-style: normal; }
 .reset-button span { color: #90ddb2; margin-left: 12px; }
 .reset-button:hover { background: rgba(58, 111, 82, .35); border-color: #75c99b; }
 
+.hotspot-label { position: absolute; left: 50%; top: 34px; display: flex; align-items: center; gap: 12px; padding: 10px 15px; border: 1px solid rgba(148, 231, 190, .4); border-radius: 99px; background: rgba(5, 22, 17, .78); box-shadow: 0 12px 40px rgba(0, 0, 0, .2); backdrop-filter: blur(14px); opacity: 0; transform: translate(-50%, -8px); transition: opacity .18s, transform .18s; }
+.hotspot-label.is-visible { opacity: 1; transform: translate(-50%, 0); }
+.hotspot-label-code { color: #92e1b7; font-size: 9px; font-weight: 600; letter-spacing: .16em; }
+.hotspot-label-title { color: #f0f8f1; font-size: 12px; font-weight: 500; }
+.hotspot-label small { color: rgba(228, 241, 231, .45); font-size: 9px; letter-spacing: .08em; }
+
+.zone-panel { position: absolute; right: 52px; top: 50%; width: min(350px, calc(100vw - 48px)); padding: 28px; border: 1px solid rgba(157, 224, 187, .3); border-radius: 16px; background: linear-gradient(145deg, rgba(9, 34, 26, .94), rgba(5, 19, 15, .9)); box-shadow: 0 22px 70px rgba(0, 0, 0, .38); backdrop-filter: blur(18px); opacity: 0; pointer-events: none; transform: translate(20px, -50%); transition: opacity .22s, transform .22s; }
+.zone-panel.is-visible { opacity: 1; pointer-events: auto; transform: translate(0, -50%); }
+.zone-panel-close { position: absolute; right: 15px; top: 12px; border: 0; color: rgba(235, 248, 238, .65); background: transparent; font: 300 24px Manrope, sans-serif; cursor: pointer; }
+.zone-panel-close:hover { color: #fff; }
+.zone-panel-code { color: #8ee0b7; font-size: 10px; font-weight: 600; letter-spacing: .2em; margin: 0 0 13px; }
+.zone-panel-title { max-width: 260px; color: #f1f7f2; font: 400 24px/1.35 Manrope, sans-serif; letter-spacing: -.02em; margin: 0 0 21px; }
+.zone-panel-description { color: rgba(226, 240, 229, .7); font-size: 13px; line-height: 1.9; white-space: pre-line; margin: 0; }
+
 @media (max-width: 680px) {
   .info-panel { padding: 26px 24px; }
   .intro { margin-bottom: 15vh; }
@@ -42,4 +57,8 @@ h1 em { color: #9fe0b7; font-style: normal; }
   .description { font-size: 13px; max-width: 310px; }
   .navigation-help { display: none; }
   .controls-hint { justify-content: flex-end; }
+  .hotspot-label { top: 22px; }
+  .hotspot-label small { display: none; }
+  .zone-panel { right: 24px; top: auto; bottom: 88px; transform: translateY(15px); }
+  .zone-panel.is-visible { transform: translateY(0); }
 }
