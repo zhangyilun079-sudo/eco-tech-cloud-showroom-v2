@@ -3,8 +3,10 @@ import type { CameraController, CameraState } from '../core/CameraController';
 import { ViewMode, type ViewModeState } from '../core/ViewMode';
 import type { InfoPanel } from '../ui/InfoPanel';
 import type { Exhibit } from './Exhibit';
+import type { ExhibitShowcase } from './ExhibitShowcase';
 
 const TRANSITION_DURATION = 0.85;
+const AUTO_ROTATION_SPEED = 0.16;
 
 interface Transition {
   readonly from: CameraState;
@@ -26,6 +28,8 @@ export class ExhibitViewer {
     private readonly canvas: HTMLCanvasElement,
     private readonly viewMode: ViewModeState,
     private readonly infoPanel: InfoPanel,
+    private readonly showcase: ExhibitShowcase,
+    private readonly onExhibitModeChange: (active: boolean) => void,
     private readonly onReturnToShowroom: () => void,
   ) {
     canvas.addEventListener('pointerdown', this.handlePointerDown);
@@ -42,9 +46,11 @@ export class ExhibitViewer {
     this.showroomCameraState = this.cameraController.captureState();
     this.cameraController.setNavigationEnabled(false);
     this.activeExhibit = exhibit;
+    this.onExhibitModeChange(true);
     exhibit.object.position.copy(position);
     exhibit.object.rotation.set(0, -0.25, 0);
     exhibit.object.visible = true;
+    this.showcase.showAt(position);
     this.zoomDistance = 5.2;
 
     const target = position.clone().add(new Vector3(0, 1.35, 0));
@@ -57,8 +63,10 @@ export class ExhibitViewer {
   public exit(): void {
     if (this.viewMode.mode !== ViewMode.EXHIBIT || !this.showroomCameraState) return;
     this.pointerId = null;
+    this.onExhibitModeChange(false);
     this.beginTransition(this.showroomCameraState, () => {
       if (this.activeExhibit) this.activeExhibit.object.visible = false;
+      this.showcase.hide();
       this.activeExhibit = null;
       this.showroomCameraState = null;
       this.viewMode.set(ViewMode.SHOWROOM);
@@ -70,6 +78,9 @@ export class ExhibitViewer {
   }
 
   public update(deltaSeconds: number): void {
+    if (this.activeExhibit && this.pointerId === null) {
+      this.activeExhibit.object.rotation.y += AUTO_ROTATION_SPEED * deltaSeconds;
+    }
     if (!this.transition) return;
     this.transition.elapsed = Math.min(this.transition.elapsed + deltaSeconds, TRANSITION_DURATION);
     const linearProgress = this.transition.elapsed / TRANSITION_DURATION;

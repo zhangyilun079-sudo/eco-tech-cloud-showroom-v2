@@ -18,6 +18,8 @@ export class PlaceholderExhibit implements Exhibit {
     id: 'zone-01-placeholder',
     title: '水处理技术验证设备',
     description: '用于验证展品查看、旋转与缩放交互的程序化占位设备。',
+    category: 'ADVANCED WATER SYSTEMS',
+    keyFeatures: ['Modular filtration chamber', 'Real-time quality sensing', 'Low-energy circulation'],
     impactLabel: 'INTERACTION PROTOTYPE',
   } as const;
 
