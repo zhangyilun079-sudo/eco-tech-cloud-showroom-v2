@@ -68,8 +68,21 @@ canvas.is-component-hovered, canvas.is-component-hovered:active { cursor: pointe
 .exhibit-explosion, .exhibit-process, .exhibit-technology { border: 1px solid rgba(142, 224, 183, .48); border-radius: 99px; padding: 10px 15px; color: #092119; background: #8ee0b7; font: 600 10px 'DM Sans', sans-serif; letter-spacing: .05em; cursor: pointer; transition: color .2s, background .2s, border-color .2s, box-shadow .2s; }
 .exhibit-explosion:hover, .exhibit-process:hover, .exhibit-technology:hover { background: #acf0ca; box-shadow: 0 0 22px rgba(112, 224, 168, .2); }
 .exhibit-explosion.is-active, .exhibit-process.is-active, .exhibit-technology.is-active { color: #dff7e9; background: rgba(25, 75, 54, .75); border-color: #8ee0b7; }
+.exhibit-actions .exhibit-explosion, .exhibit-actions .exhibit-process, .exhibit-actions .exhibit-technology { display: none; }
 .exhibit-panel.is-process-mode { opacity: .42; transform: translate(-8px, -50%); pointer-events: none; }
 .exhibit-panel.is-technology-mode { opacity: .16; transform: translate(-12px, -50%); pointer-events: none; }
+
+.exhibit-mode-menu { position: fixed; z-index: 6; left: 50%; bottom: 30px; min-width: 610px; padding: 11px 14px 13px; border: 1px solid rgba(142, 224, 183, .24); border-radius: 15px; color: #eff8f2; background: linear-gradient(145deg, rgba(5, 24, 18, .94), rgba(7, 36, 27, .9)); box-shadow: 0 18px 60px rgba(0, 0, 0, .4); backdrop-filter: blur(18px); opacity: 0; visibility: hidden; pointer-events: none; transform: translate(-50%, 14px); transition: opacity .25s, transform .25s, visibility .25s; }
+.exhibit-mode-menu.is-visible { opacity: 1; visibility: visible; pointer-events: auto; transform: translate(-50%, 0); }
+.exhibit-mode-menu > p { display: flex; align-items: center; justify-content: space-between; margin: 0 5px 9px; }
+.exhibit-mode-menu > p span { color: rgba(158, 227, 191, .48); font-size: 8px; letter-spacing: .2em; }
+.exhibit-mode-menu > p strong { color: #9ce4bd; font-size: 10px; font-weight: 500; letter-spacing: .08em; }
+.exhibit-mode-menu > div { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+.exhibit-mode-menu button { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 10px 11px; border: 1px solid transparent; border-radius: 9px; color: rgba(226, 241, 231, .58); background: transparent; cursor: pointer; transition: color .2s, border-color .2s, background .2s; }
+.exhibit-mode-menu button > span { color: rgba(125, 216, 170, .38); font: 500 8px Manrope, sans-serif; }
+.exhibit-mode-menu button > strong { font-size: 10px; font-weight: 500; white-space: nowrap; }
+.exhibit-mode-menu button:hover { color: #eef8f1; background: rgba(92, 176, 133, .1); }
+.exhibit-mode-menu button.is-active { border-color: rgba(128, 229, 179, .34); color: #b8efd0; background: rgba(68, 154, 111, .2); box-shadow: inset 0 0 18px rgba(93, 216, 153, .06); }
 
 .technology-panel { position: fixed; z-index: 5; inset: 50% 52px auto auto; width: min(720px, calc(100vw - 104px)); max-height: calc(100vh - 104px); overflow: auto; padding: 34px; border: 1px solid rgba(132, 230, 183, .32); border-radius: 16px; color: #edf8f1; background: linear-gradient(135deg, rgba(5, 22, 17, .98), rgba(7, 36, 28, .96)); box-shadow: 0 28px 90px rgba(0, 0, 0, .52), inset 0 1px rgba(218, 255, 235, .06); backdrop-filter: blur(22px); opacity: 0; visibility: hidden; transform: translate(24px, -50%); transition: opacity .3s, transform .3s, visibility .3s; }
 .technology-panel.is-visible { opacity: 1; visibility: visible; transform: translate(0, -50%); }
@@ -81,7 +94,8 @@ canvas.is-component-hovered, canvas.is-component-hovered:active { cursor: pointe
 .technology-header h2 { max-width: 540px; margin: 12px 0 7px; font: 400 28px/1.3 Manrope, sans-serif; }
 .technology-summary { color: rgba(220, 239, 227, .66); font-size: 12px; line-height: 1.65; margin: 0; }
 .technology-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 26px 0; }
-.technology-metric-card { min-width: 0; padding: 16px 14px; border: 1px solid rgba(136, 226, 181, .16); border-radius: 10px; background: linear-gradient(150deg, rgba(36, 92, 68, .35), rgba(11, 42, 32, .22)); }
+.technology-metric-card { min-width: 0; padding: 16px 14px; border: 1px solid rgba(136, 226, 181, .16); border-radius: 10px; background: linear-gradient(150deg, rgba(36, 92, 68, .35), rgba(11, 42, 32, .22)); cursor: pointer; transition: border-color .2s, background .2s, transform .2s; }
+.technology-metric-card:hover, .technology-metric-card.is-selected { border-color: rgba(133, 240, 187, .7); background: rgba(42, 118, 82, .52); transform: translateY(-2px); }
 .technology-metric-label { color: rgba(214, 238, 223, .62); font-size: 9px; letter-spacing: .08em; margin: 0 0 9px; }
 .technology-metric-value { display: block; color: #8be5b7; font: 500 20px/1.2 Manrope, sans-serif; white-space: nowrap; }
 .technology-metric-card small { display: block; overflow: hidden; margin-top: 8px; color: rgba(214, 232, 220, .42); font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
@@ -89,6 +103,8 @@ canvas.is-component-hovered, canvas.is-component-hovered:active { cursor: pointe
 .technology-section-title { margin: 0 0 14px; }
 .technology-advantages { display: grid; gap: 10px; }
 .technology-advantages article { display: flex; gap: 12px; }
+.technology-advantages article[data-related-components] { padding: 7px; margin: -7px; border: 1px solid transparent; border-radius: 7px; cursor: pointer; transition: border-color .2s, background .2s; }
+.technology-advantages article[data-related-components]:hover, .technology-advantages article.is-selected { border-color: rgba(133, 240, 187, .38); background: rgba(57, 133, 94, .2); }
 .technology-advantages article > span { color: rgba(116, 218, 166, .42); font: 500 10px Manrope, sans-serif; }
 .technology-advantages strong { display: block; color: #e8f6ed; font-size: 11px; font-weight: 500; }
 .technology-advantages p { color: rgba(218, 236, 224, .54); font-size: 9px; line-height: 1.55; margin: 3px 0 0; }
@@ -157,4 +173,10 @@ canvas.is-component-hovered, canvas.is-component-hovered:active { cursor: pointe
   .technology-metrics { grid-template-columns: repeat(2, 1fr); }
   .technology-detail-grid { grid-template-columns: 1fr; gap: 24px; }
   .technology-economic-list { grid-template-columns: 1fr; gap: 13px; }
+  .exhibit-mode-menu { left: 16px; right: 16px; bottom: 12px; min-width: 0; padding: 8px; transform: translateY(12px); }
+  .exhibit-mode-menu.is-visible { transform: translateY(0); }
+  .exhibit-mode-menu > p { display: none; }
+  .exhibit-mode-menu button { justify-content: center; padding: 10px 5px; }
+  .exhibit-mode-menu button > span { display: none; }
+  .exhibit-mode-menu button > strong { font-size: 9px; }
 }

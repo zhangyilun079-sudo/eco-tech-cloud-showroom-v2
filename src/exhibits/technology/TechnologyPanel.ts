@@ -6,7 +6,11 @@ export class TechnologyPanel {
   private readonly element: HTMLElement;
   private readonly closeButton: HTMLButtonElement;
 
-  public constructor(container: HTMLElement, private readonly onClose: () => void) {
+  public constructor(
+    container: HTMLElement,
+    private readonly onClose: () => void,
+    private readonly onHighlight: (componentIds: readonly string[]) => void,
+  ) {
     this.element = document.createElement('section');
     this.element.className = 'technology-panel';
     this.element.setAttribute('aria-label', '技术成果展示');
@@ -16,6 +20,8 @@ export class TechnologyPanel {
     if (!closeButton) throw new Error('Technology panel close button was not created.');
     this.closeButton = closeButton;
     this.closeButton.addEventListener('click', this.onClose);
+    this.element.addEventListener('click', this.handleSelection);
+    this.element.addEventListener('keydown', this.handleKeyDown);
     container.append(this.element);
   }
 
@@ -43,6 +49,10 @@ export class TechnologyPanel {
     );
     content.querySelector('.technology-advantages')!.replaceChildren(...definition.technicalAdvantages.map((advantage, index) => {
       const item = document.createElement('article');
+      item.tabIndex = 0;
+      item.setAttribute('role', 'button');
+      item.setAttribute('aria-pressed', 'false');
+      item.dataset.relatedComponents = advantage.relatedComponents?.join(',') ?? '';
       item.innerHTML = `<span>${String(index + 1).padStart(2, '0')}</span><div><strong></strong><p></p></div>`;
       item.querySelector('strong')!.textContent = advantage.title;
       item.querySelector('p')!.textContent = advantage.description;
@@ -62,6 +72,41 @@ export class TechnologyPanel {
   }
 
   public show(): void { this.element.classList.add('is-visible'); this.element.setAttribute('aria-hidden', 'false'); }
-  public hide(): void { this.element.classList.remove('is-visible'); this.element.setAttribute('aria-hidden', 'true'); }
-  public dispose(): void { this.closeButton.removeEventListener('click', this.onClose); this.element.remove(); }
+  public hide(): void {
+    this.clearSelection();
+    this.element.classList.remove('is-visible');
+    this.element.setAttribute('aria-hidden', 'true');
+  }
+  public dispose(): void {
+    this.closeButton.removeEventListener('click', this.onClose);
+    this.element.removeEventListener('click', this.handleSelection);
+    this.element.removeEventListener('keydown', this.handleKeyDown);
+    this.element.remove();
+  }
+
+  private readonly handleSelection = (event: Event): void => {
+    const item = (event.target as HTMLElement).closest<HTMLElement>('[data-related-components]');
+    if (!item || !this.element.contains(item)) return;
+    const wasSelected = item.classList.contains('is-selected');
+    this.clearSelection();
+    if (wasSelected) return;
+    item.classList.add('is-selected');
+    item.setAttribute('aria-pressed', 'true');
+    this.onHighlight(item.dataset.relatedComponents?.split(',').filter(Boolean) ?? []);
+  };
+
+  private readonly handleKeyDown = (event: KeyboardEvent): void => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    if (!(event.target instanceof HTMLElement) || !event.target.matches('[data-related-components]')) return;
+    event.preventDefault();
+    this.handleSelection(event);
+  };
+
+  private clearSelection(): void {
+    this.element.querySelectorAll<HTMLElement>('[data-related-components]').forEach((item) => {
+      item.classList.remove('is-selected');
+      item.setAttribute('aria-pressed', 'false');
+    });
+    this.onHighlight([]);
+  }
 }

@@ -48,15 +48,15 @@ export const mvrWastewaterTreatmentDefinition = {
     summary: '以机械蒸汽再压缩驱动热能循环，协同浓缩、分盐与回用。',
   },
   technicalAdvantages: [
-    { title: '高效热能循环', description: '回收二次蒸汽潜热，显著降低外部蒸汽需求。' },
-    { title: '分盐资源化', description: '蒸发结晶协同运行，促进盐类回收与废水减量。' },
-    { title: '智能稳定运行', description: '关键参数连续监测，支持自动调节与异常预警。' },
+    { title: '高效热能循环', description: '回收二次蒸汽潜热，显著降低外部蒸汽需求。', relatedComponents: ['mvr-evaporation-unit', 'heat-exchanger-module'] },
+    { title: '分盐资源化', description: '蒸发结晶协同运行，促进盐类回收与废水减量。', relatedComponents: ['mvr-evaporation-unit', 'crystallization-salt-separation-unit'] },
+    { title: '智能稳定运行', description: '关键参数连续监测，支持自动调节与异常预警。', relatedComponents: ['intelligent-monitoring-system', 'electrical-control-cabinet'] },
   ],
   technologyMetrics: [
-    { label: 'COD去除率', value: '50%-99%', note: '适配不同进水条件' },
-    { label: '水回用率', value: '≥85%', note: '冷凝水回用于生产' },
-    { label: '废水减量率', value: '75%-85%', note: '降低末端处置负荷' },
-    { label: '蒸发能耗', value: '15-70 kWh/t', note: '按吨蒸发水计' },
+    { label: 'COD去除率', value: '50%-99%', note: '适配不同进水条件', relatedComponents: ['pump-system', 'heat-exchanger-module', 'mvr-evaporation-unit'] },
+    { label: '水回用率', value: '≥85%', note: '冷凝水回用于生产', relatedComponents: ['mvr-evaporation-unit', 'crystallization-salt-separation-unit'] },
+    { label: '废水减量率', value: '75%-85%', note: '降低末端处置负荷', relatedComponents: ['mvr-evaporation-unit', 'crystallization-salt-separation-unit'] },
+    { label: '蒸发能耗', value: '15-70 kWh/t', note: '按吨蒸发水计', relatedComponents: ['mvr-evaporation-unit', 'heat-exchanger-module'] },
   ],
   applications: ['新能源', '化工', '冶金', '危废处置', '工业园区废水治理'],
   economicIndicators: [

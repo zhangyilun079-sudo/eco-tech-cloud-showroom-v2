@@ -8,6 +8,8 @@ import { mvrWastewaterTreatmentDefinition } from '../exhibits/data/mvrWastewater
 import { MvrWastewaterTreatmentModel } from '../exhibits/models/MvrWastewaterTreatmentModel';
 import { ProcessController } from '../exhibits/process/ProcessController';
 import { TechnologyController } from '../exhibits/technology/TechnologyController';
+import { ExhibitModeMenu, type ExhibitNavigationMode } from '../exhibits/navigation/ExhibitModeMenu';
+import { ExhibitResourceManager } from '../exhibits/optimization/ExhibitResourceManager';
 import { HotspotManager } from '../interaction/HotspotManager';
 import { Showroom } from '../showroom/Showroom';
 import { InfoPanel } from '../ui/InfoPanel';
@@ -31,6 +33,8 @@ export class ShowroomApplication {
   private readonly explosionController: ExplosionController;
   private readonly processController: ProcessController;
   private readonly technologyController: TechnologyController;
+  private readonly modeMenu: ExhibitModeMenu;
+  private readonly resourceManager = new ExhibitResourceManager();
   private readonly clock = new Clock();
   private animationFrameId: number | null = null;
 
@@ -58,7 +62,10 @@ export class ShowroomApplication {
       (active) => {
         this.infoPanel.setProcessMode(active);
         if (active) this.componentInteractions.deactivate();
-        else this.componentInteractions.activate(mvrExhibit);
+        else {
+          this.componentInteractions.activate(mvrExhibit);
+          this.modeMenu?.setMode('components');
+        }
       },
       (active) => this.infoPanel.setProcessAutoPlaying(active),
     );
@@ -69,14 +76,22 @@ export class ShowroomApplication {
     );
     this.technologyController = new TechnologyController(
       container,
+      mvrExhibit.object,
       mvrExhibit.metadata,
       this.viewMode,
       (active) => {
         this.infoPanel.setTechnologyMode(active);
         if (active) this.componentInteractions.deactivate();
-        else this.componentInteractions.activate(mvrExhibit);
+        else {
+          this.componentInteractions.activate(mvrExhibit);
+          this.modeMenu?.setMode('components');
+        }
       },
     );
+    this.modeMenu = new ExhibitModeMenu(container, (mode) => this.selectExhibitMode(mode, mvrExhibit));
+    this.resourceManager.registerCleanup('explosion', () => this.explosionController.cleanupAnimation());
+    this.resourceManager.registerCleanup('process', () => this.processController.cleanupVisualization());
+    this.resourceManager.registerCleanup('technology', () => this.technologyController.resetHighlight());
     this.exhibitViewer = new ExhibitViewer(
       this.camera,
       this.renderer.renderer.domElement,
@@ -95,7 +110,9 @@ export class ShowroomApplication {
         if (zone.id !== 'ZONE_01') return false;
         this.hotspots.setEnabled(false);
         this.exhibitViewer.enter(mvrExhibit, zone.hotspotPosition);
-        this.componentInteractions.activate(mvrExhibit);
+        this.modeMenu.setMode('equipment');
+        this.modeMenu.show();
+        this.componentInteractions.deactivate();
         return true;
       },
     );
@@ -126,6 +143,8 @@ export class ShowroomApplication {
     this.showroom.dispose();
     this.processController.dispose();
     this.technologyController.dispose();
+    this.modeMenu.dispose();
+    this.resourceManager.dispose();
     this.exhibits.dispose();
     this.exhibitShowcase.dispose();
     this.hotspots.dispose();
@@ -162,6 +181,8 @@ export class ShowroomApplication {
     this.explosionController.collapse(0);
     this.infoPanel.setExploded(false);
     this.componentInteractions.deactivate();
+    this.resourceManager.cleanupAll();
+    this.modeMenu.hide();
     this.exhibitViewer.exit();
   }
 
@@ -170,10 +191,12 @@ export class ShowroomApplication {
       this.viewMode.set(ViewMode.EXPLODED);
       this.explosionController.explode();
       this.infoPanel.setExploded(true);
+      this.modeMenu.setMode('exploded');
     } else if (this.viewMode.mode === ViewMode.EXPLODED) {
       this.viewMode.set(ViewMode.EXHIBIT);
       this.explosionController.collapse();
       this.infoPanel.setExploded(false);
+      this.modeMenu.setMode('equipment');
     }
   }
 
@@ -188,5 +211,27 @@ export class ShowroomApplication {
       this.viewMode.set(ViewMode.EXHIBIT);
     }
     this.processController.enter();
+  }
+
+  private selectExhibitMode(mode: ExhibitNavigationMode, exhibit: MvrWastewaterTreatmentModel): void {
+    if (this.viewMode.mode === ViewMode.PROCESS) this.processController.exit();
+    if (this.viewMode.mode === ViewMode.TECHNOLOGY) this.technologyController.exit();
+    if (this.viewMode.mode === ViewMode.EXPLODED) {
+      this.resourceManager.cleanup('explosion');
+      this.infoPanel.setExploded(false);
+      this.viewMode.set(ViewMode.EXHIBIT);
+    }
+    this.resourceManager.cleanup('process');
+    this.resourceManager.cleanup('technology');
+    this.componentInteractions.deactivate();
+
+    if (mode === 'components') this.componentInteractions.activate(exhibit);
+    else if (mode === 'exploded') {
+      this.viewMode.set(ViewMode.EXPLODED);
+      this.explosionController.explode();
+      this.infoPanel.setExploded(true);
+    } else if (mode === 'process') this.processController.enter();
+    else if (mode === 'technology') this.technologyController.enter();
+    this.modeMenu.setMode(mode);
   }
 }
