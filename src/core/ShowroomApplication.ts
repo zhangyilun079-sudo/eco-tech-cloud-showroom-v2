@@ -46,13 +46,10 @@ export class ShowroomApplication {
     this.explosionController = new ExplosionController(mvrExhibit.object, mvrExhibit.metadata);
     this.infoPanel = new InfoPanel(container, {
       onResetView: () => this.camera.reset(),
-      onExitExhibit: () => this.exitExhibitMode(),
-      onToggleExplosion: () => this.toggleExplodedView(),
       onToggleProcess: () => this.toggleProcessMode(),
       onPreviousProcessStep: () => this.processController.previous(),
       onNextProcessStep: () => this.processController.next(),
       onToggleProcessAutoPlay: () => this.processController.toggleAutoPlay(),
-      onToggleTechnology: () => this.technologyController.toggle(),
     });
     this.processController = new ProcessController(
       mvrExhibit.object,
@@ -90,8 +87,14 @@ export class ShowroomApplication {
       this.viewMode,
       this.infoPanel,
       this.exhibitShowcase,
-      (active) => { this.showroom.group.visible = !active; },
-      () => this.hotspots.setEnabled(true),
+      (active) => {
+        this.showroom.group.visible = !active;
+        if (active) this.infoPanel.setViewMode(ViewMode.EXHIBIT);
+      },
+      () => {
+        this.hotspots.setEnabled(true);
+        this.infoPanel.setViewMode(ViewMode.SHOWROOM);
+      },
     );
     this.hotspots = new HotspotManager(
       this.showroom.zones,
@@ -172,7 +175,6 @@ export class ShowroomApplication {
     this.technologyController.exit();
     this.processController.exit();
     this.explosionController.collapse(0);
-    this.infoPanel.setExploded(false);
     this.modeMenu.setExploded(false);
     this.componentInteractions.deactivate();
     this.resourceManager.cleanupAll();
@@ -184,13 +186,11 @@ export class ShowroomApplication {
     if (this.viewMode.mode === ViewMode.EXHIBIT) {
       this.viewMode.set(ViewMode.EXPLODED);
       this.explosionController.explode();
-      this.infoPanel.setExploded(true);
       this.modeMenu.setExploded(true);
       this.modeMenu.setMode('exploded');
     } else if (this.viewMode.mode === ViewMode.EXPLODED) {
       this.viewMode.set(ViewMode.EXHIBIT);
       this.explosionController.collapse();
-      this.infoPanel.setExploded(false);
       this.modeMenu.setExploded(false);
       this.modeMenu.setMode(null);
     }
@@ -203,7 +203,6 @@ export class ShowroomApplication {
     }
     if (this.viewMode.mode === ViewMode.EXPLODED) {
       this.explosionController.collapse();
-      this.infoPanel.setExploded(false);
       this.modeMenu.setExploded(false);
       this.viewMode.set(ViewMode.EXHIBIT);
     }
@@ -231,7 +230,6 @@ export class ShowroomApplication {
     if (this.viewMode.mode === ViewMode.TECHNOLOGY) this.technologyController.exit();
     if (this.viewMode.mode === ViewMode.EXPLODED) {
       this.resourceManager.cleanup('explosion');
-      this.infoPanel.setExploded(false);
       this.modeMenu.setExploded(false);
       this.viewMode.set(ViewMode.EXHIBIT);
     }
@@ -240,7 +238,6 @@ export class ShowroomApplication {
     if (mode === 'exploded') {
       this.viewMode.set(ViewMode.EXPLODED);
       this.explosionController.explode();
-      this.infoPanel.setExploded(true);
       this.modeMenu.setExploded(true);
     } else if (mode === 'process') this.processController.enter();
     else if (mode === 'technology') this.technologyController.enter();

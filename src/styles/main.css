@@ -59,17 +59,6 @@ canvas.is-component-hovered, canvas.is-component-hovered:active { cursor: pointe
 .exhibit-features { display: grid; gap: 8px; list-style: none; padding: 0; margin: 0; }
 .exhibit-features li { position: relative; padding-left: 15px; color: rgba(231, 242, 233, .76); font-size: 11px; }
 .exhibit-features li::before { content: ''; position: absolute; left: 0; top: .43em; width: 5px; height: 5px; border: 1px solid #79cda2; border-radius: 50%; }
-.exhibit-controls { display: flex; gap: 8px; color: rgba(226, 240, 229, .48); font-size: 10px; margin-bottom: 22px; }
-.exhibit-feature-section + .exhibit-controls { margin-top: 18px; }
-.exhibit-controls span { color: #a8e5c2; }
-.exhibit-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; }
-.exhibit-close { border: 1px solid rgba(142, 224, 183, .35); border-radius: 99px; padding: 10px 15px; color: #eaf6ed; background: rgba(9, 33, 25, .7); font: 500 10px 'DM Sans', sans-serif; letter-spacing: .05em; cursor: pointer; }
-.exhibit-close span { color: #8ee0b7; margin-right: 8px; }
-.exhibit-close:hover { border-color: #8ee0b7; background: rgba(49, 100, 76, .55); }
-.exhibit-explosion, .exhibit-process, .exhibit-technology { border: 1px solid rgba(142, 224, 183, .48); border-radius: 99px; padding: 10px 15px; color: #092119; background: #8ee0b7; font: 600 10px 'DM Sans', sans-serif; letter-spacing: .05em; cursor: pointer; transition: color .2s, background .2s, border-color .2s, box-shadow .2s; }
-.exhibit-explosion:hover, .exhibit-process:hover, .exhibit-technology:hover { background: #acf0ca; box-shadow: 0 0 22px rgba(112, 224, 168, .2); }
-.exhibit-explosion.is-active, .exhibit-process.is-active, .exhibit-technology.is-active { color: #dff7e9; background: rgba(25, 75, 54, .75); border-color: #8ee0b7; }
-.exhibit-actions .exhibit-explosion, .exhibit-actions .exhibit-process, .exhibit-actions .exhibit-technology { display: none; }
 .exhibit-panel.is-process-mode { opacity: .42; transform: translate(-8px, -50%); pointer-events: none; }
 .exhibit-panel.is-technology-mode { opacity: .16; transform: translate(-12px, -50%); pointer-events: none; }
 
