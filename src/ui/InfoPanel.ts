@@ -134,7 +134,7 @@ export class InfoPanel {
     this.hideZoneDetails();
     this.showHotspotLabel(null, null);
     this.exhibitTitle.textContent = metadata.title;
-    this.exhibitCategory.textContent = metadata.category ?? 'ENVIRONMENTAL TECHNOLOGY';
+    this.exhibitCategory.textContent = metadata.technologyCategory;
     this.exhibitDescription.textContent = metadata.description;
     this.exhibitFeatures.replaceChildren(...(metadata.keyFeatures ?? []).map((feature) => {
       const item = document.createElement('li');

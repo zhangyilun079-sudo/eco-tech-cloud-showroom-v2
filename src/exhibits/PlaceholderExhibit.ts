@@ -10,23 +10,18 @@ import {
   TorusGeometry,
 } from 'three';
 import type { Exhibit } from './Exhibit';
+import type { ExhibitDefinition } from './ExhibitDefinition';
 
 /** A procedural test article for validating the viewer flow; not a final exhibit. */
 export class PlaceholderExhibit implements Exhibit {
   public readonly object = new Group();
-  public readonly metadata = {
-    id: 'zone-01-placeholder',
-    title: '水处理技术验证设备',
-    description: '用于验证展品查看、旋转与缩放交互的程序化占位设备。',
-    category: 'ADVANCED WATER SYSTEMS',
-    keyFeatures: ['Modular filtration chamber', 'Real-time quality sensing', 'Low-energy circulation'],
-    impactLabel: 'INTERACTION PROTOTYPE',
-  } as const;
+  public readonly metadata: ExhibitDefinition;
 
   private readonly geometries: BufferGeometry[] = [];
   private readonly materials: Material[] = [];
 
-  public constructor() {
+  public constructor(metadata: ExhibitDefinition) {
+    this.metadata = metadata;
     this.object.name = 'ZONE_01 procedural equipment placeholder';
     this.object.visible = false;
 

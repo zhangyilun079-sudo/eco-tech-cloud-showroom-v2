@@ -3,6 +3,7 @@ import { ExhibitRegistry } from '../exhibits/ExhibitRegistry';
 import { ExhibitShowcase } from '../exhibits/ExhibitShowcase';
 import { ExhibitViewer } from '../exhibits/ExhibitViewer';
 import { PlaceholderExhibit } from '../exhibits/PlaceholderExhibit';
+import { mvrWastewaterTreatmentDefinition } from '../exhibits/data/mvrWastewaterTreatment';
 import { HotspotManager } from '../interaction/HotspotManager';
 import { Showroom } from '../showroom/Showroom';
 import { InfoPanel } from '../ui/InfoPanel';
@@ -28,7 +29,7 @@ export class ShowroomApplication {
   public constructor(private readonly container: HTMLElement) {
     this.renderer = new RendererManager(container);
     this.camera = new CameraController(this.renderer.renderer.domElement);
-    const placeholderExhibit = new PlaceholderExhibit();
+    const placeholderExhibit = new PlaceholderExhibit(mvrWastewaterTreatmentDefinition);
     this.exhibits.register(placeholderExhibit);
     this.infoPanel = new InfoPanel(container, {
       onResetView: () => this.camera.reset(),
