@@ -42,6 +42,32 @@ export const mvrWastewaterTreatmentDefinition = {
     '自动化过程控制与运行数据连续监测',
   ],
   impactLabel: '水资源回收 · 盐类资源化利用',
+  processSteps: [
+    {
+      id: 'wastewater-pretreatment',
+      title: '废水预处理',
+      description: '原水经泵组稳定输送，并通过换热器回收系统余热完成预热，为后续蒸发浓缩建立稳定的进料条件。',
+      relatedComponents: ['pump-system', 'heat-exchanger-module', 'piping-system'],
+    },
+    {
+      id: 'mvr-evaporation-concentration',
+      title: 'MVR 蒸发浓缩',
+      description: '机械蒸汽再压缩单元提升二次蒸汽的温度与压力，循环利用潜热，使废水在较低外部能耗下持续浓缩。',
+      relatedComponents: ['mvr-evaporation-unit', 'piping-system', 'pump-system'],
+    },
+    {
+      id: 'crystallization-salt-separation',
+      title: '结晶与分盐',
+      description: '浓缩液进入结晶分盐单元，通过受控成核与固液分离形成可回收盐类，并降低残余液体体积。',
+      relatedComponents: ['crystallization-salt-separation-unit', 'piping-system'],
+    },
+    {
+      id: 'resource-recovery',
+      title: '资源回收',
+      description: '分离盐类进入资源化利用环节，蒸汽冷凝水回用于生产；智能监测与电气控制保障回收过程稳定运行。',
+      relatedComponents: ['intelligent-monitoring-system', 'electrical-control-cabinet', 'piping-system'],
+    },
+  ],
   components: [
     component('mvr-evaporation-unit', 'MVR 蒸发单元', '核心浓缩处理', '压缩二次蒸汽并循环利用其热能，驱动废水高效蒸发浓缩。', ['机械蒸汽再压缩', '潜热回收利用', '高效浓缩处理'], { x: 0.75, y: 2.4, z: -0.15 }, { x: 0, y: 0, z: -2.5 }),
     component('heat-exchanger-module', '换热器模块', '进料预热与热能回收', '回收工艺余热并预热进水，有效降低系统整体能耗。', ['双筒式换热结构', '逆流换热工艺', '降低蒸汽需求'], { x: -1.72, y: 1.2, z: -0.45 }, { x: -4.2, y: 0, z: 0.3 }),

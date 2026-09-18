@@ -43,6 +43,15 @@ export interface ExhibitComponentDefinition {
   readonly label: ExhibitLabel;
 }
 
+/** A narrated stage in an exhibit's technology process. */
+export interface ExhibitProcessStepDefinition {
+  readonly id: string;
+  readonly title: string;
+  readonly description: string;
+  /** Component ids that participate in this stage. */
+  readonly relatedComponents: readonly string[];
+}
+
 /** The content and scene contract shared by exhibit UI, viewers, and loaders. */
 export interface ExhibitDefinition {
   readonly id: string;
@@ -52,6 +61,7 @@ export interface ExhibitDefinition {
   readonly processOverview: string;
   readonly keyFeatures: readonly string[];
   readonly components: readonly ExhibitComponentDefinition[];
+  readonly processSteps: readonly ExhibitProcessStepDefinition[];
   /** Optional presentation copy retained for the current showcase panel. */
   readonly impactLabel?: string;
 }

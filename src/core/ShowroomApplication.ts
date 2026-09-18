@@ -6,6 +6,7 @@ import { ExplosionController } from '../exhibits/explosion/ExplosionController';
 import { ComponentInteractionManager } from '../exhibits/components/ComponentInteractionManager';
 import { mvrWastewaterTreatmentDefinition } from '../exhibits/data/mvrWastewaterTreatment';
 import { MvrWastewaterTreatmentModel } from '../exhibits/models/MvrWastewaterTreatmentModel';
+import { ProcessController } from '../exhibits/process/ProcessController';
 import { HotspotManager } from '../interaction/HotspotManager';
 import { Showroom } from '../showroom/Showroom';
 import { InfoPanel } from '../ui/InfoPanel';
@@ -27,6 +28,7 @@ export class ShowroomApplication {
   private readonly componentInteractions: ComponentInteractionManager;
   private readonly viewMode = new ViewModeState();
   private readonly explosionController: ExplosionController;
+  private readonly processController: ProcessController;
   private readonly clock = new Clock();
   private animationFrameId: number | null = null;
 
@@ -40,7 +42,21 @@ export class ShowroomApplication {
       onResetView: () => this.camera.reset(),
       onExitExhibit: () => this.exitExhibitMode(),
       onToggleExplosion: () => this.toggleExplodedView(),
+      onToggleProcess: () => this.toggleProcessMode(),
+      onPreviousProcessStep: () => this.processController.previous(),
+      onNextProcessStep: () => this.processController.next(),
     });
+    this.processController = new ProcessController(
+      mvrExhibit.object,
+      mvrExhibit.metadata,
+      this.viewMode,
+      (step) => this.infoPanel.showProcessStep(step),
+      (active) => {
+        this.infoPanel.setProcessMode(active);
+        if (active) this.componentInteractions.deactivate();
+        else this.componentInteractions.activate(mvrExhibit);
+      },
+    );
     this.componentInteractions = new ComponentInteractionManager(
       this.camera.camera,
       this.renderer.renderer.domElement,
@@ -123,6 +139,7 @@ export class ShowroomApplication {
   };
 
   private exitExhibitMode(): void {
+    this.processController.exit();
     this.explosionController.collapse(0);
     this.infoPanel.setExploded(false);
     this.componentInteractions.deactivate();
@@ -139,5 +156,18 @@ export class ShowroomApplication {
       this.explosionController.collapse();
       this.infoPanel.setExploded(false);
     }
+  }
+
+  private toggleProcessMode(): void {
+    if (this.viewMode.mode === ViewMode.PROCESS) {
+      this.processController.exit();
+      return;
+    }
+    if (this.viewMode.mode === ViewMode.EXPLODED) {
+      this.explosionController.collapse();
+      this.infoPanel.setExploded(false);
+      this.viewMode.set(ViewMode.EXHIBIT);
+    }
+    this.processController.enter();
   }
 }
