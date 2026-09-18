@@ -7,6 +7,10 @@ export class TechnologyMetricCard {
   public constructor(metric: TechnologyMetric) {
     this.element = document.createElement('article');
     this.element.className = 'technology-metric-card';
+    this.element.tabIndex = 0;
+    this.element.setAttribute('role', 'button');
+    this.element.setAttribute('aria-pressed', 'false');
+    this.element.dataset.relatedComponents = metric.relatedComponents?.join(',') ?? '';
 
     const label = document.createElement('p');
     label.className = 'technology-metric-label';

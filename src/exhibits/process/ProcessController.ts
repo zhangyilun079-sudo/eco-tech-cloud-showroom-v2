@@ -66,6 +66,7 @@ export class ProcessController {
   }
 
   public dispose(): void { this.visualizer.dispose(); }
+  public cleanupVisualization(): void { this.setAutoPlaying(false); this.visualizer.reset(); }
 
   private presentCurrentStep(): void {
     const step = this.steps[this.currentIndex];

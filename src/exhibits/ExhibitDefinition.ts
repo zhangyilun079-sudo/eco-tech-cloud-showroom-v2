@@ -68,12 +68,16 @@ export interface TechnologyOverview {
 export interface TechnologyAdvantage {
   readonly title: string;
   readonly description: string;
+  /** Component ids that visually demonstrate this advantage. */
+  readonly relatedComponents?: readonly string[];
 }
 
 export interface TechnologyMetric {
   readonly label: string;
   readonly value: string;
   readonly note?: string;
+  /** Component ids responsible for this measured outcome. */
+  readonly relatedComponents?: readonly string[];
 }
 
 export interface EconomicIndicator {

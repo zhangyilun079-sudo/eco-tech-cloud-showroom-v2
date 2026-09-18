@@ -52,6 +52,12 @@ export class ExplosionController {
     this.animation.finish();
   }
 
+  /** Releases animation references and restores the assembled transform immediately. */
+  public cleanupAnimation(): void {
+    this.collapse(0);
+    this.exploded = false;
+  }
+
   private transitionTo(
     getTarget: (transform: ComponentTransform) => Vector3,
     durationSeconds?: number,
