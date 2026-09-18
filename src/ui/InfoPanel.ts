@@ -1,3 +1,5 @@
+import type { ExhibitMetadata } from '../exhibits/Exhibit';
+
 export class InfoPanel {
   private readonly element: HTMLElement;
   private readonly resetButton: HTMLButtonElement;
@@ -7,14 +9,20 @@ export class InfoPanel {
   private readonly zoneTitle: HTMLElement;
   private readonly zoneDescription: HTMLElement;
   private readonly closeButton: HTMLButtonElement;
+  private readonly exhibitPanel: HTMLElement;
+  private readonly exhibitTitle: HTMLElement;
+  private readonly exhibitDescription: HTMLElement;
+  private readonly exhibitCloseButton: HTMLButtonElement;
   private readonly onResetView: () => void;
+  private readonly onExitExhibit: () => void;
   private readonly handleKeyDown = (event: KeyboardEvent): void => {
     if (event.key.toLowerCase() !== 'r' || event.repeat || this.isTypingTarget(event.target)) return;
     this.onResetView();
   };
 
-  public constructor(container: HTMLElement, onResetView: () => void) {
-    this.onResetView = onResetView;
+  public constructor(container: HTMLElement, callbacks: { onResetView: () => void; onExitExhibit: () => void }) {
+    this.onResetView = callbacks.onResetView;
+    this.onExitExhibit = callbacks.onExitExhibit;
     this.element = document.createElement('aside');
     this.element.className = 'info-panel';
     this.element.setAttribute('aria-label', 'Showroom information');
@@ -52,6 +60,13 @@ export class InfoPanel {
         <h2 class="zone-panel-title"></h2>
         <p class="zone-panel-description"></p>
       </section>
+      <section class="exhibit-panel" aria-label="Exhibit viewing controls" aria-hidden="true">
+        <p class="exhibit-mode-label">EXHIBIT VIEW · ZONE_01</p>
+        <h2 class="exhibit-title"></h2>
+        <p class="exhibit-description"></p>
+        <div class="exhibit-controls"><span>Drag</span> rotate equipment <span>Wheel</span> zoom</div>
+        <button class="exhibit-close" type="button"><span>←</span> Return to showroom</button>
+      </section>
     `;
     container.append(this.element);
 
@@ -66,8 +81,15 @@ export class InfoPanel {
     const closeButton = this.element.querySelector<HTMLButtonElement>('.zone-panel-close');
     if (!closeButton) throw new Error('Zone detail close button was not created.');
     this.closeButton = closeButton;
-    this.resetButton.addEventListener('click', onResetView);
+    this.exhibitPanel = this.getRequiredElement('.exhibit-panel');
+    this.exhibitTitle = this.getRequiredElement('.exhibit-title');
+    this.exhibitDescription = this.getRequiredElement('.exhibit-description');
+    const exhibitCloseButton = this.element.querySelector<HTMLButtonElement>('.exhibit-close');
+    if (!exhibitCloseButton) throw new Error('Exhibit close button was not created.');
+    this.exhibitCloseButton = exhibitCloseButton;
+    this.resetButton.addEventListener('click', callbacks.onResetView);
     this.closeButton.addEventListener('click', this.hideZoneDetails);
+    this.exhibitCloseButton.addEventListener('click', callbacks.onExitExhibit);
     window.addEventListener('keydown', this.handleKeyDown);
   }
 
@@ -87,10 +109,27 @@ export class InfoPanel {
     this.zonePanel.setAttribute('aria-hidden', 'false');
   }
 
+  public showExhibit(metadata: ExhibitMetadata): void {
+    this.hideZoneDetails();
+    this.showHotspotLabel(null, null);
+    this.exhibitTitle.textContent = metadata.title;
+    this.exhibitDescription.textContent = metadata.description;
+    this.exhibitPanel.classList.add('is-visible');
+    this.exhibitPanel.setAttribute('aria-hidden', 'false');
+    this.element.classList.add('is-exhibit-mode');
+  }
+
+  public hideExhibit(): void {
+    this.exhibitPanel.classList.remove('is-visible');
+    this.exhibitPanel.setAttribute('aria-hidden', 'true');
+    this.element.classList.remove('is-exhibit-mode');
+  }
+
   public dispose(): void {
     window.removeEventListener('keydown', this.handleKeyDown);
     this.resetButton.replaceWith(this.resetButton.cloneNode(true));
     this.closeButton.removeEventListener('click', this.hideZoneDetails);
+    this.exhibitCloseButton.removeEventListener('click', this.onExitExhibit);
     this.element.remove();
   }
 
