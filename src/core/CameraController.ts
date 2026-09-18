@@ -24,13 +24,13 @@ export class CameraController {
     this.controls = new OrbitControls(this.camera, canvas);
     this.controls.target.copy(INITIAL_TARGET);
     this.controls.enableDamping = true;
-    this.controls.dampingFactor = 0.06;
+    this.controls.dampingFactor = 0.075;
     this.controls.minDistance = 5;
     this.controls.maxDistance = 27;
     this.controls.maxPolarAngle = Math.PI * 0.48;
     this.controls.minPolarAngle = Math.PI * 0.16;
     this.controls.enablePan = true;
-    this.controls.panSpeed = 0.7;
+    this.controls.panSpeed = 1.15;
     this.controls.screenSpacePanning = true;
     this.controls.enableZoom = true;
     this.controls.mouseButtons.LEFT = MOUSE.ROTATE;
