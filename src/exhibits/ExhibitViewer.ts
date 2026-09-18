@@ -65,7 +65,8 @@ export class ExhibitViewer {
   }
 
   public exit(): void {
-    if (this.viewMode.mode !== ViewMode.EXHIBIT || !this.showroomCameraState) return;
+    if ((this.viewMode.mode !== ViewMode.EXHIBIT && this.viewMode.mode !== ViewMode.EXPLODED)
+      || !this.showroomCameraState) return;
     this.pointerId = null;
     this.onExhibitModeChange(false);
     this.beginTransition(this.showroomCameraState, () => {
@@ -113,7 +114,8 @@ export class ExhibitViewer {
   }
 
   private readonly handlePointerDown = (event: PointerEvent): void => {
-    if (this.viewMode.mode !== ViewMode.EXHIBIT || this.transition || event.button !== 0) return;
+    if ((this.viewMode.mode !== ViewMode.EXHIBIT && this.viewMode.mode !== ViewMode.EXPLODED)
+      || this.transition || event.button !== 0) return;
     this.pointerId = event.pointerId;
     this.pointerPosition.set(event.clientX, event.clientY);
     this.canvas.setPointerCapture(event.pointerId);
@@ -139,7 +141,8 @@ export class ExhibitViewer {
   };
 
   private readonly handleWheel = (event: WheelEvent): void => {
-    if (this.viewMode.mode !== ViewMode.EXHIBIT || this.transition || !this.activeExhibit) return;
+    if ((this.viewMode.mode !== ViewMode.EXHIBIT && this.viewMode.mode !== ViewMode.EXPLODED)
+      || this.transition || !this.activeExhibit) return;
     event.preventDefault();
     this.zoomDistance = MathUtils.clamp(this.zoomDistance + event.deltaY * 0.004, 4.5, 11);
     const target = this.activeExhibit.object.position.clone().add(new Vector3(0, this.focusHeight, 0));
