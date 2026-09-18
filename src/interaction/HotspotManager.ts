@@ -21,9 +21,20 @@ export class HotspotManager {
   public readonly group = new Group();
   private readonly hotspots: Hotspot[];
   private readonly raycastManager: RaycastManager;
+  private readonly canvas: HTMLCanvasElement;
+  private readonly infoPanel: InfoPanel;
   private hovered: Hotspot | null = null;
+  private enabled = true;
 
-  public constructor(zones: readonly ShowroomZone[], camera: PerspectiveCamera, canvas: HTMLCanvasElement, infoPanel: InfoPanel) {
+  public constructor(
+    zones: readonly ShowroomZone[],
+    camera: PerspectiveCamera,
+    canvas: HTMLCanvasElement,
+    infoPanel: InfoPanel,
+    onSelect: (zone: ShowroomZone) => boolean,
+  ) {
+    this.canvas = canvas;
+    this.infoPanel = infoPanel;
     this.group.name = 'Exhibition zone hotspots';
     this.hotspots = zones.map((zone) => {
       const content = ZONE_CONTENT[zone.id];
@@ -32,7 +43,9 @@ export class HotspotManager {
         position: zone.hotspotPosition.clone().add(new Vector3(0, 1.7, 0)),
         title: content.title,
         description: content.description,
-        onClick: (selected) => infoPanel.showZoneDetails(selected.id, selected.title, selected.description),
+        onClick: (selected) => {
+          if (!onSelect(zone)) infoPanel.showZoneDetails(selected.id, selected.title, selected.description);
+        },
       });
       this.group.add(hotspot.object);
       return hotspot;
@@ -41,7 +54,7 @@ export class HotspotManager {
     this.raycastManager = new RaycastManager({
       camera,
       canvas,
-      getTargets: () => this.hotspots.map((hotspot) => hotspot.target),
+      getTargets: () => this.enabled ? this.hotspots.map((hotspot) => hotspot.target) : [],
       onHover: (target) => {
         const candidate: unknown = target?.userData.hotspot;
         const next = candidate instanceof Hotspot ? candidate : null;
@@ -61,6 +74,15 @@ export class HotspotManager {
 
   public update(deltaSeconds: number): void {
     this.hotspots.forEach((hotspot) => hotspot.update(deltaSeconds));
+  }
+
+  public setEnabled(enabled: boolean): void {
+    this.enabled = enabled;
+    if (enabled) return;
+    this.hovered?.setHovered(false);
+    this.hovered = null;
+    this.infoPanel.showHotspotLabel(null, null);
+    this.canvas.classList.remove('is-hotspot-hovered');
   }
 
   public dispose(): void {

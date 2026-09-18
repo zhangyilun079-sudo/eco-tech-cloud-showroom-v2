@@ -6,6 +6,11 @@ const INITIAL_TARGET = new Vector3(0, 2.2, 0);
 const MIN_TARGET = new Vector3(-11, 0.75, -9);
 const MAX_TARGET = new Vector3(11, 5, 9);
 
+export interface CameraState {
+  readonly position: Vector3;
+  readonly target: Vector3;
+}
+
 export class CameraController {
   public readonly camera: PerspectiveCamera;
   public readonly controls: OrbitControls;
@@ -48,7 +53,21 @@ export class CameraController {
 
   public update(): void {
     this.controls.update();
-    this.constrainTargetToShowroom();
+    if (this.controls.enabled) this.constrainTargetToShowroom();
+  }
+
+  public captureState(): CameraState {
+    return { position: this.camera.position.clone(), target: this.controls.target.clone() };
+  }
+
+  public applyState(state: CameraState): void {
+    this.camera.position.copy(state.position);
+    this.controls.target.copy(state.target);
+    this.camera.lookAt(state.target);
+  }
+
+  public setNavigationEnabled(enabled: boolean): void {
+    this.controls.enabled = enabled;
   }
 
   public reset(): void {

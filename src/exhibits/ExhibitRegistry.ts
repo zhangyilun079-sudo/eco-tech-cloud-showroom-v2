@@ -17,6 +17,10 @@ export class ExhibitRegistry {
     this.group.add(exhibit.object);
   }
 
+  public get(id: string): Exhibit | undefined {
+    return this.exhibits.get(id);
+  }
+
   public update(deltaSeconds: number): void {
     this.exhibits.forEach((exhibit) => exhibit.update(deltaSeconds));
   }
