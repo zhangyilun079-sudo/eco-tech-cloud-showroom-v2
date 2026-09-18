@@ -3,6 +3,7 @@ export const ViewMode = {
   EXHIBIT: 'EXHIBIT',
   EXPLODED: 'EXPLODED',
   PROCESS: 'PROCESS',
+  TECHNOLOGY: 'TECHNOLOGY',
 } as const;
 
 export type ViewMode = typeof ViewMode[keyof typeof ViewMode];

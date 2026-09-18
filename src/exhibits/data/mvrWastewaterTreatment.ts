@@ -42,6 +42,28 @@ export const mvrWastewaterTreatmentDefinition = {
     '自动化过程控制与运行数据连续监测',
   ],
   impactLabel: '水资源回收 · 盐类资源化利用',
+  technologyOverview: {
+    title: 'MVR 高盐废水资源化技术',
+    category: '减污降碳 · 水资源循环',
+    summary: '以机械蒸汽再压缩驱动热能循环，协同浓缩、分盐与回用。',
+  },
+  technicalAdvantages: [
+    { title: '高效热能循环', description: '回收二次蒸汽潜热，显著降低外部蒸汽需求。' },
+    { title: '分盐资源化', description: '蒸发结晶协同运行，促进盐类回收与废水减量。' },
+    { title: '智能稳定运行', description: '关键参数连续监测，支持自动调节与异常预警。' },
+  ],
+  technologyMetrics: [
+    { label: 'COD去除率', value: '50%-99%', note: '适配不同进水条件' },
+    { label: '水回用率', value: '≥85%', note: '冷凝水回用于生产' },
+    { label: '废水减量率', value: '75%-85%', note: '降低末端处置负荷' },
+    { label: '蒸发能耗', value: '15-70 kWh/t', note: '按吨蒸发水计' },
+  ],
+  applications: ['新能源', '化工', '冶金', '危废处置', '工业园区废水治理'],
+  economicIndicators: [
+    { title: '设备投资', value: '模块化配置', description: '依据水量、水质与回用目标灵活组合。' },
+    { title: '运行成本', value: '能效优化', description: '潜热循环与智能控制降低综合能耗。' },
+    { title: '维护周期', value: '计划维护', description: '模块化检修设计，支持连续稳定运行。' },
+  ],
   processSteps: [
     {
       id: 'wastewater-pretreatment',
