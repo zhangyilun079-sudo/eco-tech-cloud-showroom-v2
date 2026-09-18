@@ -45,6 +45,7 @@ export class ShowroomApplication {
       onToggleProcess: () => this.toggleProcessMode(),
       onPreviousProcessStep: () => this.processController.previous(),
       onNextProcessStep: () => this.processController.next(),
+      onToggleProcessAutoPlay: () => this.processController.toggleAutoPlay(),
     });
     this.processController = new ProcessController(
       mvrExhibit.object,
@@ -56,6 +57,7 @@ export class ShowroomApplication {
         if (active) this.componentInteractions.deactivate();
         else this.componentInteractions.activate(mvrExhibit);
       },
+      (active) => this.infoPanel.setProcessAutoPlaying(active),
     );
     this.componentInteractions = new ComponentInteractionManager(
       this.camera.camera,
@@ -109,6 +111,7 @@ export class ShowroomApplication {
     if (this.animationFrameId !== null) cancelAnimationFrame(this.animationFrameId);
     window.removeEventListener('resize', this.handleResize);
     this.showroom.dispose();
+    this.processController.dispose();
     this.exhibits.dispose();
     this.exhibitShowcase.dispose();
     this.hotspots.dispose();
@@ -131,6 +134,7 @@ export class ShowroomApplication {
     this.camera.update();
     this.exhibitViewer.update(delta);
     this.explosionController.update(delta);
+    this.processController.update(delta);
     this.componentInteractions.update();
     this.exhibits.update(delta);
     this.hotspots.update(delta);
