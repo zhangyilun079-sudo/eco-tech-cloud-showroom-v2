@@ -1,5 +1,6 @@
 import type { ExhibitMetadata } from '../exhibits/Exhibit';
 import type { ExhibitComponentDefinition } from '../exhibits/ExhibitDefinition';
+import type { ProcessStep } from '../exhibits/process/ProcessStep';
 
 export class InfoPanel {
   private readonly element: HTMLElement;
@@ -17,6 +18,14 @@ export class InfoPanel {
   private readonly exhibitFeatures: HTMLElement;
   private readonly exhibitCloseButton: HTMLButtonElement;
   private readonly explosionButton: HTMLButtonElement;
+  private readonly processButton: HTMLButtonElement;
+  private readonly processPanel: HTMLElement;
+  private readonly processProgress: HTMLElement;
+  private readonly processTitle: HTMLElement;
+  private readonly processDescription: HTMLElement;
+  private readonly processPreviousButton: HTMLButtonElement;
+  private readonly processNextButton: HTMLButtonElement;
+  private readonly processExitButton: HTMLButtonElement;
   private readonly componentLabel: HTMLElement;
   private readonly componentPanel: HTMLElement;
   private readonly componentName: HTMLElement;
@@ -27,6 +36,9 @@ export class InfoPanel {
   private readonly onResetView: () => void;
   private readonly onExitExhibit: () => void;
   private readonly onToggleExplosion: () => void;
+  private readonly onToggleProcess: () => void;
+  private readonly onPreviousProcessStep: () => void;
+  private readonly onNextProcessStep: () => void;
   private hasHoveredHotspot = false;
   private readonly handleKeyDown = (event: KeyboardEvent): void => {
     if (event.key.toLowerCase() !== 'r' || event.repeat || this.isTypingTarget(event.target)) return;
@@ -37,10 +49,16 @@ export class InfoPanel {
     onResetView: () => void;
     onExitExhibit: () => void;
     onToggleExplosion: () => void;
+    onToggleProcess: () => void;
+    onPreviousProcessStep: () => void;
+    onNextProcessStep: () => void;
   }) {
     this.onResetView = callbacks.onResetView;
     this.onExitExhibit = callbacks.onExitExhibit;
     this.onToggleExplosion = callbacks.onToggleExplosion;
+    this.onToggleProcess = callbacks.onToggleProcess;
+    this.onPreviousProcessStep = callbacks.onPreviousProcessStep;
+    this.onNextProcessStep = callbacks.onNextProcessStep;
     this.element = document.createElement('aside');
     this.element.className = 'info-panel';
     this.element.setAttribute('aria-label', '展厅信息');
@@ -85,7 +103,18 @@ export class InfoPanel {
         <div class="exhibit-actions">
           <button class="exhibit-close" type="button"><span>←</span> 返回展厅</button>
           <button class="exhibit-explosion" type="button" aria-pressed="false">拆解展示</button>
+          <button class="exhibit-process" type="button" aria-pressed="false">工艺流程</button>
           <button class="exhibit-specification" type="button" disabled>技术资料</button>
+        </div>
+      </section>
+      <section class="process-panel" aria-label="工艺流程" aria-hidden="true">
+        <button class="process-exit" type="button" aria-label="退出工艺流程">×</button>
+        <p class="process-kicker">工艺流程 · <span class="process-progress"></span></p>
+        <h2 class="process-title"></h2>
+        <p class="process-description"></p>
+        <div class="process-navigation">
+          <button class="process-previous" type="button">← 上一步</button>
+          <button class="process-next" type="button">下一步 →</button>
         </div>
       </section>
       <div class="component-label" role="status" aria-live="polite">
@@ -127,6 +156,20 @@ export class InfoPanel {
     const explosionButton = this.element.querySelector<HTMLButtonElement>('.exhibit-explosion');
     if (!explosionButton) throw new Error('Exploded view button was not created.');
     this.explosionButton = explosionButton;
+    const processButton = this.element.querySelector<HTMLButtonElement>('.exhibit-process');
+    if (!processButton) throw new Error('Process mode button was not created.');
+    this.processButton = processButton;
+    this.processPanel = this.getRequiredElement('.process-panel');
+    this.processProgress = this.getRequiredElement('.process-progress');
+    this.processTitle = this.getRequiredElement('.process-title');
+    this.processDescription = this.getRequiredElement('.process-description');
+    const processPreviousButton = this.element.querySelector<HTMLButtonElement>('.process-previous');
+    const processNextButton = this.element.querySelector<HTMLButtonElement>('.process-next');
+    const processExitButton = this.element.querySelector<HTMLButtonElement>('.process-exit');
+    if (!processPreviousButton || !processNextButton || !processExitButton) throw new Error('Process controls were not created.');
+    this.processPreviousButton = processPreviousButton;
+    this.processNextButton = processNextButton;
+    this.processExitButton = processExitButton;
     this.componentLabel = this.getRequiredElement('.component-label');
     this.componentPanel = this.getRequiredElement('.component-panel');
     this.componentName = this.getRequiredElement('.component-panel-name');
@@ -140,6 +183,10 @@ export class InfoPanel {
     this.closeButton.addEventListener('click', this.hideZoneDetails);
     this.exhibitCloseButton.addEventListener('click', callbacks.onExitExhibit);
     this.explosionButton.addEventListener('click', callbacks.onToggleExplosion);
+    this.processButton.addEventListener('click', callbacks.onToggleProcess);
+    this.processPreviousButton.addEventListener('click', callbacks.onPreviousProcessStep);
+    this.processNextButton.addEventListener('click', callbacks.onNextProcessStep);
+    this.processExitButton.addEventListener('click', callbacks.onToggleProcess);
     this.componentCloseButton.addEventListener('click', this.hideComponent);
     window.addEventListener('keydown', this.handleKeyDown);
   }
@@ -191,12 +238,30 @@ export class InfoPanel {
     this.exhibitPanel.setAttribute('aria-hidden', 'true');
     this.element.classList.remove('is-exhibit-mode');
     this.setExploded(false);
+    this.setProcessMode(false);
   }
 
   public setExploded(exploded: boolean): void {
     this.explosionButton.textContent = exploded ? '恢复结构' : '拆解展示';
     this.explosionButton.setAttribute('aria-pressed', String(exploded));
     this.explosionButton.classList.toggle('is-active', exploded);
+  }
+
+  public setProcessMode(active: boolean): void {
+    this.processPanel.classList.toggle('is-visible', active);
+    this.processPanel.setAttribute('aria-hidden', String(!active));
+    this.processButton.classList.toggle('is-active', active);
+    this.processButton.setAttribute('aria-pressed', String(active));
+    this.exhibitPanel.classList.toggle('is-process-mode', active);
+    if (active) this.hideComponent();
+  }
+
+  public showProcessStep(step: ProcessStep): void {
+    this.processProgress.textContent = `${String(step.index + 1).padStart(2, '0')} / ${String(step.total).padStart(2, '0')}`;
+    this.processTitle.textContent = step.definition.title;
+    this.processDescription.textContent = step.definition.description;
+    this.processPreviousButton.disabled = step.isFirst;
+    this.processNextButton.disabled = step.isLast;
   }
 
   public showComponentLabel(title: string | null): void {
@@ -235,6 +300,10 @@ export class InfoPanel {
     this.closeButton.removeEventListener('click', this.hideZoneDetails);
     this.exhibitCloseButton.removeEventListener('click', this.onExitExhibit);
     this.explosionButton.removeEventListener('click', this.onToggleExplosion);
+    this.processButton.removeEventListener('click', this.onToggleProcess);
+    this.processPreviousButton.removeEventListener('click', this.onPreviousProcessStep);
+    this.processNextButton.removeEventListener('click', this.onNextProcessStep);
+    this.processExitButton.removeEventListener('click', this.onToggleProcess);
     this.componentCloseButton.removeEventListener('click', this.hideComponent);
     this.element.remove();
   }
