@@ -161,6 +161,7 @@ export class ShowroomApplication {
   private readonly animate = (): void => {
     const delta = Math.min(this.clock.getDelta(), 0.1);
     this.camera.update();
+    this.showroom.update(delta);
     this.exhibitViewer.update(delta);
     this.explosionController.update(delta);
     this.processController.update(delta);
