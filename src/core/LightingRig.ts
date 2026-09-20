@@ -33,9 +33,24 @@ export class LightingRig extends Group {
     architecturalLight.position.set(0, 7.4, -9.5);
     architecturalLight.lookAt(0, 2, 0);
 
-    const entranceFill = new RectAreaLight('#79d9dd', 1.8, 12, 4);
-    entranceFill.position.set(0, 6.2, 10);
-    entranceFill.lookAt(0, 1.5, 0);
+    const entranceFill = new RectAreaLight('#79e8e2', 3.4, 12, 5);
+    entranceFill.position.set(0, 6.4, 14.5);
+    entranceFill.lookAt(0, 2.2, 5);
+
+    const arrivalFill = new RectAreaLight('#75efc1', 2.2, 9, 2.5);
+    arrivalFill.position.set(0, 3.2, 18.4);
+    arrivalFill.lookAt(0, 0, 13.5);
+
+    const portalWashLeft = new SpotLight('#75efe1', 18, 14, Math.PI / 8, 0.78, 1.35);
+    portalWashLeft.position.set(-5.4, 7.9, 16.5);
+    const portalTargetLeft = new Object3D();
+    portalTargetLeft.position.set(-5.4, 3.5, 13.7);
+    portalWashLeft.target = portalTargetLeft;
+    const portalWashRight = new SpotLight('#79eeb5', 18, 14, Math.PI / 8, 0.78, 1.35);
+    portalWashRight.position.set(5.4, 7.9, 16.5);
+    const portalTargetRight = new Object3D();
+    portalTargetRight.position.set(5.4, 3.5, 13.7);
+    portalWashRight.target = portalTargetRight;
 
     // Narrow, soft spotlights keep each display bay legible without competing
     // with the architectural daylight or turning the room into a glowing set.
@@ -52,6 +67,9 @@ export class LightingRig extends Group {
       this.add(spot, target);
     });
 
-    this.add(skyFill, ambient, sun, architecturalLight, entranceFill);
+    this.add(
+      skyFill, ambient, sun, architecturalLight, entranceFill, arrivalFill,
+      portalWashLeft, portalTargetLeft, portalWashRight, portalTargetRight,
+    );
   }
 }

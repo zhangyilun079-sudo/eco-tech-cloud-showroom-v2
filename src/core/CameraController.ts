@@ -1,11 +1,11 @@
 import { MOUSE, PerspectiveCamera, Vector3 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-// Begin above and beyond the arrival threshold. The wide entrance perspective
-// establishes the unobstructed hall, data core, and several perimeter bays in
-// one view before the visitor starts navigating.
-const INITIAL_CAMERA_POSITION = new Vector3(8.8, 8.6, 21.5);
-const INITIAL_TARGET = new Vector3(0, 1.65, -1.5);
+// A centered, close arrival view looks directly through the gateway. The data
+// island anchors the composition while the rear and side exhibition bays stay
+// visible around it from the very first frame.
+const INITIAL_CAMERA_POSITION = new Vector3(0, 5.25, 23.4);
+const INITIAL_TARGET = new Vector3(0, 2.5, -1.8);
 const MIN_TARGET = new Vector3(-11, 0.75, -9);
 const MAX_TARGET = new Vector3(11, 5, 9);
 
