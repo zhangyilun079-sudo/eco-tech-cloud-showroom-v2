@@ -18,6 +18,7 @@ import {
   Texture,
   Vector3,
 } from 'three';
+import { CentralDataCore } from './CentralDataCore';
 
 export type ShowroomZoneId = 'ZONE_01' | 'ZONE_02' | 'ZONE_03' | 'ZONE_04' | 'ZONE_05';
 
@@ -48,6 +49,7 @@ const ZONE_LAYOUTS: readonly ZoneLayout[] = [
 export class Showroom {
   public readonly group = new Group();
   public readonly zones: readonly ShowroomZone[];
+  public readonly centralDataCore = new CentralDataCore();
   private readonly geometries: BufferGeometry[] = [];
   private readonly materials: Material[] = [];
   private readonly textures: Texture[] = [];
@@ -57,14 +59,19 @@ export class Showroom {
     this.createFloorAndAtrium();
     this.createArchitecture();
     this.createEntrance();
-    this.createCentralCorePlaceholder();
+    this.group.add(this.centralDataCore);
     this.zones = ZONE_LAYOUTS.map((layout) => this.createZone(layout));
   }
 
   public dispose(): void {
+    this.centralDataCore.dispose();
     this.geometries.forEach((geometry) => geometry.dispose());
     this.materials.forEach((material) => material.dispose());
     this.textures.forEach((texture) => texture.dispose());
+  }
+
+  public update(delta: number): void {
+    this.centralDataCore.update(delta);
   }
 
   private createFloorAndAtrium(): void {
@@ -219,30 +226,6 @@ export class Showroom {
       }
       this.group.add(railing);
     }
-  }
-
-  /** A deliberately restrained base for the later holographic globe/data island. */
-  private createCentralCorePlaceholder(): void {
-    const core = new Group();
-    core.name = 'Future holographic data island placeholder';
-    const baseMaterial = this.keepMaterial(new MeshPhysicalMaterial({
-      color: '#f7fbfa', roughness: 0.24, clearcoat: 0.62, clearcoatRoughness: 0.2,
-    }));
-    const accent = this.keepMaterial(new MeshStandardMaterial({
-      color: '#7ee5dc', emissive: '#45c9c0', emissiveIntensity: 1.25, roughness: 0.25,
-    }));
-    const base = new Mesh(this.keepGeometry(new CylinderGeometry(2.05, 2.25, 0.34, 64)), baseMaterial);
-    base.position.y = 0.17;
-    base.castShadow = true;
-    base.receiveShadow = true;
-    core.add(base);
-    for (const [radius, height] of [[1.72, 0.36], [1.25, 0.4]] as const) {
-      const ring = new Mesh(this.keepGeometry(new TorusGeometry(radius, 0.035, 8, 64)), accent);
-      ring.rotation.x = Math.PI / 2;
-      ring.position.y = height;
-      core.add(ring);
-    }
-    this.group.add(core);
   }
 
   private createZone(layout: ZoneLayout): ShowroomZone {
