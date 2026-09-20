@@ -75,14 +75,14 @@ const ZONE_THEMES: Readonly<Record<ShowroomZoneId, ZoneTheme>> = {
   },
 };
 
-// These anchors are part of the showroom/exhibit contract. The architecture is
-// arranged around them rather than moving exhibits when the shell changes.
+// Every bay retains the same local exhibit/hotspot attachment contract. Their
+// parent anchors sit at the perimeter so the centre reads as circulation space.
 const ZONE_LAYOUTS: readonly ZoneLayout[] = [
-  { id: 'ZONE_01', position: [-8.4, 0, -8.25], rotation: 0 },
+  { id: 'ZONE_01', position: [-9.25, 0, -8.25], rotation: 0 },
   { id: 'ZONE_02', position: [0, 0, -8.25], rotation: 0 },
-  { id: 'ZONE_03', position: [8.4, 0, -8.25], rotation: 0 },
-  { id: 'ZONE_04', position: [-12.25, 0, 1.25], rotation: Math.PI / 2 },
-  { id: 'ZONE_05', position: [12.25, 0, 1.25], rotation: -Math.PI / 2 },
+  { id: 'ZONE_03', position: [9.25, 0, -8.25], rotation: 0 },
+  { id: 'ZONE_04', position: [-12.25, 0, -1.55], rotation: Math.PI / 2 },
+  { id: 'ZONE_05', position: [12.25, 0, -1.55], rotation: -Math.PI / 2 },
 ];
 
 export class Showroom {
@@ -154,6 +154,28 @@ export class Showroom {
     innerInlay.rotation.x = -Math.PI / 2;
     innerInlay.position.y = 0.238;
     this.group.add(innerInlay);
+
+    // A broad, flush circulation loop makes the intended visitor route legible
+    // without introducing rails or walls around the central gathering space.
+    const routeMaterial = this.keepMaterial(new MeshStandardMaterial({
+      color: '#c3dedb', roughness: 0.52, metalness: 0.05,
+      transparent: true, opacity: 0.72,
+    }));
+    for (const [inner, outer] of [[6.35, 6.43], [8.05, 8.11]] as const) {
+      const route = new Mesh(this.keepGeometry(new RingGeometry(inner, outer, 96)), routeMaterial);
+      route.name = 'Flush circular visitor circulation marker';
+      route.rotation.x = -Math.PI / 2;
+      route.position.y = 0.012;
+      this.group.add(route);
+    }
+
+    // The uninterrupted entrance spine leads directly to the data core. It is
+    // deliberately floor-only so the arrival view stays completely open.
+    const arrivalSpine = new Mesh(this.keepGeometry(new PlaneGeometry(2.9, 8.2)), routeMaterial);
+    arrivalSpine.name = 'Open entrance circulation spine';
+    arrivalSpine.rotation.x = -Math.PI / 2;
+    arrivalSpine.position.set(0, 0.014, 8.55);
+    this.group.add(arrivalSpine);
   }
 
   private createArchitecture(): void {
@@ -379,13 +401,6 @@ export class Showroom {
       this.group.add(step);
     }
 
-    const railFrame = this.keepMaterial(new MeshStandardMaterial({
-      color: '#94b8bd', roughness: 0.2, metalness: 0.7,
-    }));
-    const railGlass = this.keepMaterial(new MeshPhysicalMaterial({
-      color: '#c8f5f5', roughness: 0.05, transmission: 0.75,
-      transparent: true, opacity: 0.25, depthWrite: false, side: DoubleSide,
-    }));
     const guidanceMaterial = this.keepMaterial(new MeshStandardMaterial({
       color: '#bceee5', emissive: '#55bfb1', emissiveIntensity: 0.38, roughness: 0.34,
     }));
@@ -397,75 +412,22 @@ export class Showroom {
       this.group.add(guide);
     }
 
-    const portalMaterial = this.keepMaterial(new MeshPhysicalMaterial({
-      color: '#f7faf9', roughness: 0.3, metalness: 0.06, clearcoat: 0.38,
-    }));
-    const portalLight = this.keepMaterial(new MeshStandardMaterial({
-      color: '#ddffff', emissive: '#61d6cc', emissiveIntensity: 1.45, roughness: 0.2,
-    }));
-    const sideWallGeometry = this.keepGeometry(new BoxGeometry(2.15, 3.35, 4.5));
-    for (const x of [-7.05, 7.05]) {
-      const wall = new Mesh(sideWallGeometry, portalMaterial);
-      wall.name = 'Entrance sculptural side wall';
-      wall.position.set(x, 1.55, 10.35);
-      wall.rotation.y = x < 0 ? -0.09 : 0.09;
-      wall.castShadow = true;
-      wall.receiveShadow = true;
-      this.group.add(wall);
-
-      const edgeLight = new Mesh(this.keepGeometry(new BoxGeometry(0.07, 2.75, 3.85)), portalLight);
-      edgeLight.name = 'Entrance vertical guidance light';
-      edgeLight.position.set(x + (x < 0 ? 1.1 : -1.1), 1.65, 10.25);
-      edgeLight.rotation.y = wall.rotation.y;
-      this.group.add(edgeLight);
-    }
-    const portalBeam = new Mesh(this.keepGeometry(new BoxGeometry(12.2, 0.38, 1.05)), portalMaterial);
-    portalBeam.name = 'Entrance floating portal canopy';
-    portalBeam.position.set(0, 4.65, 10.15);
-    portalBeam.castShadow = true;
-    this.group.add(portalBeam);
-    const portalBeamLight = new Mesh(this.keepGeometry(new BoxGeometry(8.1, 0.055, 0.12)), portalLight);
-    portalBeamLight.name = 'Entrance portal light line';
-    portalBeamLight.position.set(0, 4.43, 10.58);
-    this.group.add(portalBeamLight);
-
-    for (const x of [-5.5, 5.5]) {
-      const railing = new Group();
-      railing.name = 'Foreground glass balustrade';
-      railing.position.set(x, 0, 10.6);
-      const pane = new Mesh(this.keepGeometry(new BoxGeometry(3.8, 1.05, 0.055)), railGlass);
-      pane.position.y = 0.62;
-      railing.add(pane);
-      const cap = new Mesh(this.keepGeometry(new BoxGeometry(3.9, 0.055, 0.1)), railFrame);
-      cap.position.y = 1.17;
-      railing.add(cap);
-      for (const postX of [-1.9, 1.9]) {
-        const post = new Mesh(this.keepGeometry(new BoxGeometry(0.07, 1.18, 0.07)), railFrame);
-        post.position.set(postX, 0.59, 0);
-        railing.add(post);
-      }
-      this.group.add(railing);
-    }
+    const threshold = new Mesh(this.keepGeometry(new RingGeometry(0.58, 0.64, 48)), guidanceMaterial);
+    threshold.name = 'Subtle entrance orientation marker';
+    threshold.rotation.x = -Math.PI / 2;
+    threshold.position.set(0, 0.022, 11.55);
+    this.group.add(threshold);
   }
 
   private createHumanScaleFurnishings(): void {
     const bodyMaterial = this.keepMaterial(new MeshStandardMaterial({
       color: '#66868a', roughness: 0.78, transparent: true, opacity: 0.58,
     }));
-    const white = this.keepMaterial(new MeshPhysicalMaterial({
-      color: '#f4f8f7', roughness: 0.4, clearcoat: 0.24,
-    }));
-    const accent = this.keepMaterial(new MeshStandardMaterial({
-      color: '#78d7cd', emissive: '#39a99f', emissiveIntensity: 0.3, roughness: 0.3,
-    }));
-    const screen = this.keepMaterial(new MeshStandardMaterial({
-      color: '#b9eeee', emissive: '#50bfb7', emissiveIntensity: 0.48, roughness: 0.22,
-    }));
-
-    // Sparse, low-contrast figures establish scale without becoming exhibits.
+    // Sparse, low-contrast figures establish scale along the perimeter while
+    // keeping the entrance and the central sightline empty.
     const visitorPositions: readonly [number, number, number, number][] = [
       [-9.6, 0, -4.1, 0.15], [7.4, 0, -6.1, -0.35], [-11.8, 4.48, -5.8, 0.45],
-      [10.9, 0, 5.1, -0.5], [3.8, 0, 6.8, 0.2],
+      [10.7, 0, -3.8, -0.5], [-7.6, 0, 1.9, 0.2],
     ];
     visitorPositions.forEach(([x, y, z, rotation], index) => {
       const visitor = new Group();
@@ -480,38 +442,6 @@ export class Showroom {
       visitor.rotation.y = rotation;
       this.group.add(visitor);
     });
-
-    for (const x of [-5.8, 5.8]) {
-      const desk = new Group();
-      desk.name = 'Visitor exhibition interaction desk';
-      const base = new Mesh(this.sharedGeometry('interaction-desk', () => new BoxGeometry(2.15, 0.82, 0.72)), white);
-      base.position.y = 0.42;
-      desk.add(base);
-      const display = new Mesh(this.sharedGeometry('interaction-desk-screen', () => new BoxGeometry(1.55, 0.06, 0.44)), screen);
-      display.position.set(0, 0.87, -0.02);
-      display.rotation.x = -0.18;
-      desk.add(display);
-      const toeLight = new Mesh(this.sharedGeometry('interaction-desk-light', () => new BoxGeometry(1.72, 0.06, 0.04)), accent);
-      toeLight.position.set(0, 0.13, 0.38);
-      desk.add(toeLight);
-      desk.position.set(x, 0, 4.9);
-      desk.rotation.y = x < 0 ? -0.12 : 0.12;
-      this.group.add(desk);
-    }
-
-    for (const x of [-10.7, 10.7]) {
-      const kiosk = new Group();
-      kiosk.name = 'Freestanding visitor information kiosk';
-      const pedestal = new Mesh(this.sharedGeometry('info-kiosk', () => new BoxGeometry(0.72, 1.45, 0.42)), white);
-      pedestal.position.y = 0.73;
-      kiosk.add(pedestal);
-      const kioskScreen = new Mesh(this.sharedGeometry('info-kiosk-screen', () => new BoxGeometry(0.58, 0.72, 0.045)), screen);
-      kioskScreen.position.set(0, 1.03, 0.235);
-      kiosk.add(kioskScreen);
-      kiosk.position.set(x, 0, 7.25);
-      kiosk.rotation.y = x < 0 ? 0.32 : -0.32;
-      this.group.add(kiosk);
-    }
   }
 
   private createZone(layout: ZoneLayout): ShowroomZone {
