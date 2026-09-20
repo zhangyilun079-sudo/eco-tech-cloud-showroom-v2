@@ -468,6 +468,7 @@ export class Showroom {
     this.createTitleMarker(zone, layout.id, theme);
     this.createDataDisplay(zone, theme, trim, light);
     this.createTechnologyMotif(zone, theme, trim, light);
+    this.createZoneTechnologyDisplay(zone, layout.id, theme, trim, light);
 
     // Local transform intentionally matches the original attachment contract.
     const exhibitPlaceholder = new Group();
@@ -480,6 +481,277 @@ export class Showroom {
     this.group.add(zone);
     const hotspotPosition = exhibitPlaceholder.getWorldPosition(new Vector3());
     return { id: layout.id, position: zone.position.clone(), hotspotPosition, exhibitPlaceholder };
+  }
+
+  /**
+   * Permanent, non-interactive context models that make every bay read as a
+   * technology exhibition at hall scale. These deliberately remain separate
+   * from the exhibit placeholder and the interactive MVR exhibit contract.
+   */
+  private createZoneTechnologyDisplay(zone: Group, id: ShowroomZoneId, theme: ZoneTheme, trim: Material, light: Material): void {
+    const display = new Group();
+    display.name = `${id} permanent technology exhibition display`;
+    display.position.set(0, 0.31, 1.43);
+
+    const steel = this.keepMaterial(new MeshStandardMaterial({ color: '#53666a', roughness: 0.28, metalness: 0.82 }));
+    const brushedMetal = this.keepMaterial(new MeshStandardMaterial({ color: '#a9babd', roughness: 0.3, metalness: 0.72 }));
+    const darkMetal = this.keepMaterial(new MeshStandardMaterial({ color: '#26383d', roughness: 0.32, metalness: 0.76 }));
+    const glass = this.keepMaterial(new MeshPhysicalMaterial({
+      color: theme.accentSoft, roughness: 0.08, metalness: 0.05, transmission: 0.58,
+      transparent: true, opacity: 0.52, thickness: 0.08, depthWrite: false,
+    }));
+    const screen = this.keepMaterial(new MeshStandardMaterial({
+      color: '#153d45', emissive: theme.accent, emissiveIntensity: 0.9, roughness: 0.18,
+    }));
+    const greenery = this.keepMaterial(new MeshStandardMaterial({ color: '#4e8b63', roughness: 0.82 }));
+
+    if (id === 'ZONE_01') this.createWaterTreatmentDisplay(display, steel, brushedMetal, glass, screen, trim, light);
+    else if (id === 'ZONE_02') this.createResourceRecoveryDisplay(display, steel, darkMetal, glass, greenery, trim, light);
+    else if (id === 'ZONE_03') this.createCleanEnergyDisplay(display, steel, brushedMetal, glass, screen, trim, light);
+    else if (id === 'ZONE_04') this.createAirTreatmentDisplay(display, steel, brushedMetal, glass, screen, trim, light);
+    else this.createEcologicalRestorationDisplay(display, steel, glass, screen, greenery, trim, light);
+
+    display.traverse((object) => {
+      if (object instanceof Mesh) {
+        object.castShadow = true;
+        object.receiveShadow = true;
+      }
+    });
+    zone.add(display);
+  }
+
+  private createWaterTreatmentDisplay(display: Group, steel: Material, metal: Material, glass: Material, screen: Material, trim: Material, light: Material): void {
+    const skid = new Mesh(this.keepGeometry(new BoxGeometry(3.25, 0.12, 1.5)), steel);
+    skid.name = 'MVR process skid';
+    skid.position.y = 0.05;
+    display.add(skid);
+
+    // Tall evaporator and separator vessels form the unmistakable MVR silhouette.
+    const vesselGeometry = this.keepGeometry(new CylinderGeometry(0.31, 0.36, 1.9, 20));
+    for (const [x, height] of [[-0.9, 1], [-0.25, 0.78]] as const) {
+      const vessel = new Mesh(vesselGeometry, metal);
+      vessel.name = 'MVR stainless steel evaporation vessel';
+      vessel.scale.y = height;
+      vessel.position.set(x, 0.18 + 0.95 * height, -0.12);
+      display.add(vessel);
+      const sightGlass = new Mesh(this.keepGeometry(new BoxGeometry(0.12, 0.58 * height, 0.045)), glass);
+      sightGlass.position.set(x, vessel.position.y, 0.22);
+      display.add(sightGlass);
+    }
+    const tankGeometry = this.keepGeometry(new CylinderGeometry(0.4, 0.4, 0.62, 20));
+    for (const x of [0.56, 1.22]) {
+      const tank = new Mesh(tankGeometry, metal);
+      tank.name = 'Wastewater balance tank';
+      tank.position.set(x, 0.43, 0.28);
+      display.add(tank);
+      const rim = new Mesh(this.keepGeometry(new TorusGeometry(0.4, 0.035, 7, 24)), trim);
+      rim.rotation.x = Math.PI / 2;
+      rim.position.set(x, 0.75, 0.28);
+      display.add(rim);
+    }
+    this.addPipe(display, [-1.48, 1.62, -0.35], [1.48, 1.62, -0.35], 0.055, trim, 'MVR overhead process pipe');
+    this.addPipe(display, [-1.15, 0.82, 0.53], [1.38, 0.82, 0.53], 0.045, light, 'MVR illuminated water loop');
+    for (const x of [-1.5, -0.75, 0, 0.75, 1.5]) {
+      this.addPipe(display, [x, 0.12, -0.62], [x, 1.78, -0.62], 0.035, steel, 'MVR steel support upright');
+    }
+    const compressor = new Mesh(this.keepGeometry(new TorusGeometry(0.3, 0.12, 10, 28)), steel);
+    compressor.name = 'MVR vapour compressor silhouette';
+    compressor.position.set(0.47, 1.28, -0.17);
+    compressor.rotation.y = Math.PI / 2;
+    display.add(compressor);
+    this.addControlCabinet(display, 1.48, 0.48, -0.38, steel, screen, light, 'MVR process control cabinet');
+  }
+
+  private createResourceRecoveryDisplay(display: Group, steel: Material, darkMetal: Material, glass: Material, greenery: Material, trim: Material, light: Material): void {
+    const base = new Mesh(this.keepGeometry(new BoxGeometry(3.3, 0.1, 1.5)), steel);
+    base.position.y = 0.04;
+    display.add(base);
+    const conveyor = new Group();
+    conveyor.name = 'Material sorting conveyor';
+    conveyor.rotation.y = -0.13;
+    const belt = new Mesh(this.keepGeometry(new BoxGeometry(2.45, 0.13, 0.55)), darkMetal);
+    belt.position.y = 0.62;
+    conveyor.add(belt);
+    for (const x of [-1.05, -0.52, 0, 0.52, 1.05]) {
+      const roller = new Mesh(this.keepGeometry(new CylinderGeometry(0.1, 0.1, 0.62, 12)), trim);
+      roller.rotation.x = Math.PI / 2;
+      roller.position.set(x, 0.68, 0);
+      conveyor.add(roller);
+    }
+    for (const x of [-1.08, 1.08]) this.addPipe(conveyor, [x, 0.08, -0.2], [x, 0.58, -0.2], 0.035, steel, 'Conveyor support');
+    conveyor.position.set(-0.28, 0, 0.15);
+    display.add(conveyor);
+    const hopper = new Mesh(this.keepGeometry(new CylinderGeometry(0.55, 0.25, 0.78, 4)), glass);
+    hopper.name = 'Recycling feed hopper';
+    hopper.position.set(-1.12, 1.13, -0.18);
+    hopper.rotation.y = Math.PI / 4;
+    display.add(hopper);
+    const processor = new Mesh(this.keepGeometry(new BoxGeometry(0.85, 1.18, 0.85)), steel);
+    processor.name = 'Enclosed resource processing module';
+    processor.position.set(1.08, 0.68, -0.18);
+    display.add(processor);
+    const window = new Mesh(this.keepGeometry(new BoxGeometry(0.55, 0.45, 0.04)), glass);
+    window.position.set(1.08, 0.78, 0.265);
+    display.add(window);
+    for (const [x, z, material] of [[0.75, 0.58, greenery], [1.15, 0.58, trim], [1.5, 0.58, light]] as const) {
+      const bale = new Mesh(this.keepGeometry(new BoxGeometry(0.3, 0.28, 0.32)), material);
+      bale.name = 'Recovered material bale';
+      bale.position.set(x, 0.25, z);
+      display.add(bale);
+    }
+    const circulation = new Mesh(this.keepGeometry(new TorusGeometry(0.48, 0.06, 8, 36, Math.PI * 1.72)), light);
+    circulation.name = 'Resource circulation loop';
+    circulation.position.set(0.35, 1.55, -0.38);
+    circulation.rotation.z = 0.22;
+    display.add(circulation);
+  }
+
+  private createCleanEnergyDisplay(display: Group, steel: Material, metal: Material, glass: Material, screen: Material, trim: Material, light: Material): void {
+    const rack = new Mesh(this.keepGeometry(new BoxGeometry(3.25, 0.12, 1.45)), steel);
+    rack.position.y = 0.05;
+    display.add(rack);
+    for (const [z, y] of [[-0.28, 0.57], [0.32, 0.57]] as const) {
+      const tank = new Mesh(this.keepGeometry(new CylinderGeometry(0.25, 0.25, 1.85, 20)), metal);
+      tank.name = 'High pressure hydrogen storage tank';
+      tank.rotation.z = Math.PI / 2;
+      tank.position.set(-0.52, y, z);
+      display.add(tank);
+      for (const x of [-1.12, 0.08]) {
+        const collar = new Mesh(this.keepGeometry(new TorusGeometry(0.255, 0.035, 7, 20)), trim);
+        collar.rotation.y = Math.PI / 2;
+        collar.position.set(x, y, z);
+        display.add(collar);
+      }
+    }
+    const solarArray = new Group();
+    solarArray.name = 'Photovoltaic energy array';
+    solarArray.position.set(0.9, 0.52, 0.24);
+    solarArray.rotation.x = -0.35;
+    for (const x of [-0.46, 0, 0.46]) {
+      const panel = new Mesh(this.keepGeometry(new BoxGeometry(0.4, 0.045, 0.82)), screen);
+      panel.position.x = x;
+      solarArray.add(panel);
+      const rail = new Mesh(this.keepGeometry(new BoxGeometry(0.045, 0.06, 0.86)), light);
+      rail.position.set(x, 0.03, 0);
+      solarArray.add(rail);
+    }
+    display.add(solarArray);
+    this.addPipe(display, [-1.47, 1.05, -0.58], [0.35, 1.05, -0.58], 0.045, light, 'Hydrogen distribution line');
+    this.addControlCabinet(display, 1.42, 0.61, -0.42, steel, screen, trim, 'Energy monitoring station');
+    const status = new Mesh(this.keepGeometry(new RingGeometry(0.13, 0.18, 24)), glass);
+    status.position.set(1.42, 0.78, 0.04);
+    display.add(status);
+  }
+
+  private createAirTreatmentDisplay(display: Group, steel: Material, metal: Material, glass: Material, screen: Material, trim: Material, light: Material): void {
+    const base = new Mesh(this.keepGeometry(new BoxGeometry(3.3, 0.1, 1.48)), steel);
+    base.position.y = 0.04;
+    display.add(base);
+    const scrubber = new Mesh(this.keepGeometry(new CylinderGeometry(0.38, 0.44, 1.65, 20)), metal);
+    scrubber.name = 'Air scrubbing tower';
+    scrubber.position.set(-1.05, 0.9, -0.13);
+    display.add(scrubber);
+    for (const y of [0.38, 0.92, 1.47]) {
+      const band = new Mesh(this.keepGeometry(new TorusGeometry(0.4, 0.035, 7, 24)), trim);
+      band.rotation.x = Math.PI / 2;
+      band.position.set(-1.05, y, -0.13);
+      display.add(band);
+    }
+    const filterBank = new Mesh(this.keepGeometry(new BoxGeometry(1.15, 1.12, 0.85)), steel);
+    filterBank.name = 'VOCs filtration module';
+    filterBank.position.set(0.37, 0.62, 0.02);
+    display.add(filterBank);
+    for (const x of [-0.02, 0.35, 0.72]) {
+      const filter = new Mesh(this.keepGeometry(new BoxGeometry(0.23, 0.78, 0.04)), glass);
+      filter.position.set(x, 0.64, 0.465);
+      display.add(filter);
+    }
+    this.addPipe(display, [-0.69, 1.42, -0.13], [1.35, 1.42, -0.13], 0.16, metal, 'Air treatment duct');
+    const fan = new Mesh(this.keepGeometry(new TorusGeometry(0.32, 0.08, 9, 24)), steel);
+    fan.name = 'Extraction fan housing';
+    fan.position.set(1.34, 1.42, -0.13);
+    fan.rotation.y = Math.PI / 2;
+    display.add(fan);
+    this.addControlCabinet(display, 1.32, 0.52, 0.42, steel, screen, light, 'Air quality monitoring cabinet');
+    const sensor = new Mesh(this.keepGeometry(new SphereGeometry(0.11, 12, 8)), light);
+    sensor.name = 'Ambient emissions sensor';
+    sensor.position.set(1.55, 1.78, 0.38);
+    display.add(sensor);
+  }
+
+  private createEcologicalRestorationDisplay(display: Group, steel: Material, glass: Material, screen: Material, greenery: Material, trim: Material, light: Material): void {
+    const earth = this.keepMaterial(new MeshStandardMaterial({ color: '#8d8061', roughness: 0.92 }));
+    const water = this.keepMaterial(new MeshPhysicalMaterial({
+      color: '#55b9bd', roughness: 0.12, transmission: 0.38, transparent: true, opacity: 0.78,
+    }));
+    const terrain = new Mesh(this.keepGeometry(new CylinderGeometry(1.7, 1.7, 0.16, 36)), earth);
+    terrain.name = 'Wetland landscape model terrain';
+    terrain.position.y = 0.06;
+    terrain.scale.z = 0.43;
+    display.add(terrain);
+    for (const [x, z, radius] of [[-0.58, 0.02, 0.52], [0.18, 0.18, 0.46], [0.78, -0.12, 0.38]] as const) {
+      const pond = new Mesh(this.keepGeometry(new CylinderGeometry(radius, radius, 0.035, 28)), water);
+      pond.name = 'Constructed wetland water cell';
+      pond.position.set(x, 0.165, z);
+      pond.scale.z = 0.55;
+      display.add(pond);
+    }
+    const reedGeometry = this.keepGeometry(new CylinderGeometry(0.018, 0.026, 0.42, 6));
+    const reedPositions: readonly [number, number][] = [
+      [-1.35, -0.28], [-1.18, 0.18], [-0.88, 0.42], [-0.38, -0.38], [0.18, -0.42],
+      [0.55, 0.4], [0.94, 0.25], [1.26, -0.28], [1.45, 0.12], [0.02, 0.48],
+    ];
+    reedPositions.forEach(([x, z], index) => {
+      const reed = new Mesh(reedGeometry, index % 3 === 0 ? trim : greenery);
+      reed.name = 'Wetland planting';
+      reed.position.set(x, 0.36 + (index % 2) * 0.08, z);
+      display.add(reed);
+    });
+    this.addPipe(display, [1.18, 0.16, -0.48], [1.18, 1.5, -0.48], 0.045, steel, 'Ecological monitoring mast');
+    const station = new Mesh(this.keepGeometry(new BoxGeometry(0.52, 0.54, 0.42)), steel);
+    station.name = 'Wetland monitoring station';
+    station.position.set(1.18, 0.61, -0.48);
+    display.add(station);
+    const stationScreen = new Mesh(this.keepGeometry(new BoxGeometry(0.32, 0.24, 0.035)), screen);
+    stationScreen.position.set(1.18, 0.65, -0.255);
+    display.add(stationScreen);
+    const remoteSensor = new Group();
+    remoteSensor.name = 'Remote sensing antenna';
+    remoteSensor.position.set(1.18, 1.55, -0.48);
+    remoteSensor.rotation.z = -0.38;
+    const dish = new Mesh(this.keepGeometry(new CylinderGeometry(0.32, 0.08, 0.08, 24)), glass);
+    dish.rotation.x = Math.PI / 2;
+    remoteSensor.add(dish);
+    const signal = new Mesh(this.keepGeometry(new TorusGeometry(0.42, 0.025, 7, 24, Math.PI)), light);
+    signal.position.set(0, 0.18, 0);
+    remoteSensor.add(signal);
+    display.add(remoteSensor);
+  }
+
+  private addControlCabinet(parent: Group, x: number, y: number, z: number, bodyMaterial: Material, screenMaterial: Material, accentMaterial: Material, name: string): void {
+    const cabinet = new Group();
+    cabinet.name = name;
+    cabinet.position.set(x, y, z);
+    const body = new Mesh(this.keepGeometry(new BoxGeometry(0.52, 0.96, 0.42)), bodyMaterial);
+    cabinet.add(body);
+    const screen = new Mesh(this.keepGeometry(new BoxGeometry(0.32, 0.25, 0.035)), screenMaterial);
+    screen.position.set(0, 0.17, 0.225);
+    cabinet.add(screen);
+    const indicator = new Mesh(this.keepGeometry(new BoxGeometry(0.27, 0.035, 0.04)), accentMaterial);
+    indicator.position.set(0, -0.19, 0.228);
+    cabinet.add(indicator);
+    parent.add(cabinet);
+  }
+
+  private addPipe(parent: Group, start: readonly [number, number, number], end: readonly [number, number, number], radius: number, material: Material, name: string): void {
+    const startPoint = new Vector3(...start);
+    const endPoint = new Vector3(...end);
+    const direction = endPoint.clone().sub(startPoint);
+    const pipe = new Mesh(this.keepGeometry(new CylinderGeometry(radius, radius, direction.length(), 10)), material);
+    pipe.name = name;
+    pipe.position.copy(startPoint).add(endPoint).multiplyScalar(0.5);
+    pipe.quaternion.setFromUnitVectors(new Vector3(0, 1, 0), direction.normalize());
+    parent.add(pipe);
   }
 
   private createExhibitionBay(zone: Group, shell: Material, inset: Material, trim: Material, light: Material, id: ShowroomZoneId, theme: ZoneTheme): void {
