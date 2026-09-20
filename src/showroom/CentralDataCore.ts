@@ -99,12 +99,12 @@ export class CentralDataCore extends Group {
     this.globe.position.y = 2.15;
 
     const shell = this.keepMaterial(new MeshPhysicalMaterial({
-      color: '#75e6dd', emissive: '#1c8f8d', emissiveIntensity: 0.2,
-      transparent: true, opacity: 0.11, transmission: 0.25, roughness: 0.08,
-      thickness: 0.08, depthWrite: false, side: DoubleSide,
+      color: '#75e6dd', emissive: '#1c8f8d', emissiveIntensity: 0.11,
+      transparent: true, opacity: 0.075, transmission: 0.62, roughness: 0.12,
+      thickness: 0.16, depthWrite: false, side: DoubleSide,
     }));
     const grid = this.keepMaterial(new MeshBasicMaterial({
-      color: '#66dcd4', transparent: true, opacity: 0.26, wireframe: true,
+      color: '#66dcd4', transparent: true, opacity: 0.2, wireframe: true,
       depthWrite: false, blending: AdditiveBlending,
     }));
     const sphereGeometry = this.keepGeometry(new SphereGeometry(1.02, 28, 18));
@@ -125,7 +125,7 @@ export class CentralDataCore extends Group {
     this.add(this.globe);
 
     const ringMaterial = this.keepMaterial(new MeshBasicMaterial({
-      color: '#7ce4d7', transparent: true, opacity: 0.48, depthWrite: false,
+      color: '#7ce4d7', transparent: true, opacity: 0.32, depthWrite: false,
     }));
     this.orbitRings.name = 'Ecological data orbital rings';
     this.orbitRings.position.y = 2.15;
@@ -144,7 +144,7 @@ export class CentralDataCore extends Group {
     METRICS.forEach((metric, index) => {
       const texture = this.createMetricTexture(metric);
       const material = this.keepMaterial(new MeshBasicMaterial({
-        map: texture, transparent: true, opacity: 0.9, depthWrite: false, side: DoubleSide,
+        map: texture, transparent: true, opacity: 0.82, depthWrite: false, side: DoubleSide,
       }));
       const panel = new Mesh(panelGeometry, material);
       const angle = index * Math.PI * 2 / METRICS.length + Math.PI / 2;
@@ -187,13 +187,13 @@ export class CentralDataCore extends Group {
 
   private createIllumination(): void {
     const haloMaterial = this.keepMaterial(new MeshBasicMaterial({
-      color: new Color('#56ddd1'), transparent: true, opacity: 0.12,
+      color: new Color('#56ddd1'), transparent: true, opacity: 0.075,
       depthWrite: false, blending: AdditiveBlending,
     }));
     const halo = new Mesh(this.keepGeometry(new CylinderGeometry(0.7, 1.02, 1.45, 32, 1, true)), haloMaterial);
     halo.position.y = 1.15;
     this.add(halo);
-    const light = new PointLight('#65e3d7', 7, 5.2, 2);
+    const light = new PointLight('#65e3d7', 4.2, 4.6, 2);
     light.position.y = 1.5;
     this.add(light);
   }

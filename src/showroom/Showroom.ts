@@ -92,6 +92,8 @@ export class Showroom {
   private readonly geometries: BufferGeometry[] = [];
   private readonly materials: Material[] = [];
   private readonly textures: Texture[] = [];
+  private readonly sharedGeometries = new Map<string, BufferGeometry>();
+  private zoneShellMaterial?: MeshPhysicalMaterial;
 
   public constructor() {
     this.group.name = 'Bright ecological technology exhibition centre';
@@ -116,10 +118,10 @@ export class Showroom {
   private createFloorAndAtrium(): void {
     const floorMaterial = this.keepMaterial(new MeshPhysicalMaterial({
       color: new Color('#edf2f1'),
-      roughness: 0.3,
-      metalness: 0.02,
-      clearcoat: 0.45,
-      clearcoatRoughness: 0.32,
+      roughness: 0.26,
+      metalness: 0.035,
+      clearcoat: 0.62,
+      clearcoatRoughness: 0.28,
     }));
     const floor = new Mesh(this.keepGeometry(new PlaneGeometry(31, 27)), floorMaterial);
     floor.name = 'Polished white exhibition floor';
@@ -150,14 +152,14 @@ export class Showroom {
 
   private createArchitecture(): void {
     const white = this.keepMaterial(new MeshPhysicalMaterial({
-      color: '#f6f9f8', roughness: 0.3, metalness: 0.02, clearcoat: 0.32,
+      color: '#f6f9f8', roughness: 0.38, metalness: 0.015, clearcoat: 0.24, clearcoatRoughness: 0.42,
     }));
     const frame = this.keepMaterial(new MeshStandardMaterial({
       color: '#b8d1d3', roughness: 0.28, metalness: 0.55,
     }));
     const glass = this.keepMaterial(new MeshPhysicalMaterial({
-      color: '#bcebf0', roughness: 0.06, metalness: 0, transmission: 0.78,
-      transparent: true, opacity: 0.25, thickness: 0.06, depthWrite: false, side: DoubleSide,
+      color: '#d7f4f3', roughness: 0.1, metalness: 0, transmission: 0.86,
+      transparent: true, opacity: 0.2, thickness: 0.12, depthWrite: false, side: DoubleSide,
     }));
     const light = this.keepMaterial(new MeshStandardMaterial({
       color: '#eaffff', emissive: '#8cebe2', emissiveIntensity: 2.1, roughness: 0.18,
@@ -248,6 +250,17 @@ export class Showroom {
       color: '#c8f5f5', roughness: 0.05, transmission: 0.75,
       transparent: true, opacity: 0.25, depthWrite: false, side: DoubleSide,
     }));
+    const guidanceMaterial = this.keepMaterial(new MeshStandardMaterial({
+      color: '#bceee5', emissive: '#55bfb1', emissiveIntensity: 0.38, roughness: 0.34,
+    }));
+    const guidanceGeometry = this.keepGeometry(new BoxGeometry(0.055, 0.018, 5.8));
+    for (const x of [-1.35, 1.35]) {
+      const guide = new Mesh(guidanceGeometry, guidanceMaterial);
+      guide.name = 'Entrance guidance inlay';
+      guide.position.set(x, 0.018, 9.35);
+      this.group.add(guide);
+    }
+
     for (const x of [-5.5, 5.5]) {
       const railing = new Group();
       railing.name = 'Foreground glass balustrade';
@@ -273,18 +286,18 @@ export class Showroom {
     zone.position.set(...layout.position);
     zone.rotation.y = layout.rotation;
 
-    const shell = this.keepMaterial(new MeshPhysicalMaterial({
-      color: '#f8faf9', roughness: 0.28, clearcoat: 0.38, clearcoatRoughness: 0.28,
+    const shell = this.zoneShellMaterial ??= this.keepMaterial(new MeshPhysicalMaterial({
+      color: '#f8faf9', roughness: 0.36, clearcoat: 0.3, clearcoatRoughness: 0.4,
     }));
     const theme = ZONE_THEMES[layout.id];
     const inset = this.keepMaterial(new MeshStandardMaterial({
       color: theme.panel, roughness: 0.5, metalness: 0.04,
     }));
     const trim = this.keepMaterial(new MeshStandardMaterial({
-      color: theme.accent, roughness: 0.28, metalness: 0.48,
+      color: theme.accent, roughness: 0.24, metalness: 0.68,
     }));
     const light = this.keepMaterial(new MeshStandardMaterial({
-      color: theme.accentSoft, emissive: theme.accent, emissiveIntensity: 0.75, roughness: 0.2,
+      color: theme.accentSoft, emissive: theme.accent, emissiveIntensity: 0.52, roughness: 0.2,
     }));
 
     this.createExhibitionBay(zone, shell, inset, trim, light, layout.id, theme);
@@ -306,54 +319,54 @@ export class Showroom {
   }
 
   private createExhibitionBay(zone: Group, shell: Material, inset: Material, trim: Material, light: Material, id: ShowroomZoneId, theme: ZoneTheme): void {
-    const back = new Mesh(this.keepGeometry(new BoxGeometry(5.15, 3.45, 0.16)), shell);
+    const back = new Mesh(this.sharedGeometry('zone-wall', () => new BoxGeometry(5.15, 3.45, 0.16)), shell);
     back.name = `${id} white exhibition wall`;
     back.position.set(0, 1.82, 0);
     back.receiveShadow = true;
     zone.add(back);
 
-    const insetPanel = new Mesh(this.keepGeometry(new BoxGeometry(4.45, 1.72, 0.035)), inset);
+    const insetPanel = new Mesh(this.sharedGeometry('zone-inset', () => new BoxGeometry(4.45, 1.72, 0.035)), inset);
     insetPanel.name = `${id} integrated display backdrop`;
     insetPanel.position.set(0, 1.45, 0.1);
     zone.add(insetPanel);
 
     const featurePanel = new Mesh(
-      this.keepGeometry(new PlaneGeometry(4.08, 1.4)),
+      this.sharedGeometry('zone-feature', () => new PlaneGeometry(4.08, 1.4)),
       this.keepMaterial(new MeshStandardMaterial({ color: theme.panel, roughness: 0.42 })),
     );
     featurePanel.name = `${id} themed ecological background wall`;
     featurePanel.position.set(0, 1.46, 0.124);
     zone.add(featurePanel);
 
-    const uprightGeometry = this.keepGeometry(new BoxGeometry(0.16, 3.7, 0.38));
+    const uprightGeometry = this.sharedGeometry('zone-upright', () => new BoxGeometry(0.16, 3.7, 0.38));
     for (const x of [-2.65, 2.65]) {
       const upright = new Mesh(uprightGeometry, shell);
       upright.position.set(x, 1.85, 0.28);
       upright.castShadow = true;
       zone.add(upright);
     }
-    const canopy = new Mesh(this.keepGeometry(new BoxGeometry(5.46, 0.2, 0.72)), shell);
+    const canopy = new Mesh(this.sharedGeometry('zone-canopy', () => new BoxGeometry(5.46, 0.2, 0.72)), shell);
     canopy.name = `${id} floating exhibition canopy`;
     canopy.position.set(0, 3.7, 0.45);
     canopy.castShadow = true;
     zone.add(canopy);
 
-    const titleBand = new Mesh(this.keepGeometry(new BoxGeometry(4.25, 0.78, 0.09)), trim);
+    const titleBand = new Mesh(this.sharedGeometry('zone-title-band', () => new BoxGeometry(4.25, 0.78, 0.09)), trim);
     titleBand.name = `${id} integrated title band`;
     titleBand.position.set(0, 2.92, 0.12);
     zone.add(titleBand);
-    const displayLight = new Mesh(this.keepGeometry(new BoxGeometry(3.85, 0.045, 0.08)), light);
+    const displayLight = new Mesh(this.sharedGeometry('zone-display-light', () => new BoxGeometry(3.85, 0.045, 0.08)), light);
     displayLight.name = `${id} integrated display light`;
     displayLight.position.set(0, 2.3, 0.17);
     zone.add(displayLight);
 
-    const platform = new Mesh(this.keepGeometry(new CylinderGeometry(1.7, 1.82, 0.28, 48)), shell);
+    const platform = new Mesh(this.sharedGeometry('zone-platform', () => new CylinderGeometry(1.7, 1.82, 0.28, 48)), shell);
     platform.name = `${id} raised presentation platform`;
     platform.position.set(0, 0.15, 1.45);
     platform.castShadow = true;
     platform.receiveShadow = true;
     zone.add(platform);
-    const platformAccent = new Mesh(this.keepGeometry(new TorusGeometry(1.69, 0.035, 8, 48)), light);
+    const platformAccent = new Mesh(this.sharedGeometry('zone-platform-accent', () => new TorusGeometry(1.69, 0.035, 8, 48)), light);
     platformAccent.rotation.x = Math.PI / 2;
     platformAccent.position.set(0, 0.3, 1.45);
     zone.add(platformAccent);
@@ -381,7 +394,7 @@ export class Showroom {
     const material = this.keepMaterial(new MeshStandardMaterial({
       map: texture, transparent: true, roughness: 0.35, metalness: 0.02,
     }));
-    const marker = new Mesh(this.keepGeometry(new PlaneGeometry(4.05, 0.76)), material);
+    const marker = new Mesh(this.sharedGeometry('zone-title', () => new PlaneGeometry(4.05, 0.76)), material);
     marker.name = `${id} title marker`;
     marker.position.set(0, 2.92, 0.18);
     zone.add(marker);
@@ -392,7 +405,7 @@ export class Showroom {
     display.name = `${zone.name} environmental data visualization`;
     display.position.set(1.42, 1.47, 0.155);
 
-    const baseline = new Mesh(this.keepGeometry(new BoxGeometry(1.02, 0.025, 0.025)), trim);
+    const baseline = new Mesh(this.sharedGeometry('data-baseline', () => new BoxGeometry(1.02, 0.025, 0.025)), trim);
     baseline.position.set(0, -0.42, 0);
     display.add(baseline);
     const values = [0.3, 0.56, 0.43, 0.78, 0.65, 0.92];
@@ -419,7 +432,7 @@ export class Showroom {
       texture.colorSpace = SRGBColorSpace;
       this.textures.push(texture);
       const label = new Mesh(
-        this.keepGeometry(new PlaneGeometry(1.55, 0.39)),
+        this.sharedGeometry('data-label', () => new PlaneGeometry(1.55, 0.39)),
         this.keepMaterial(new MeshStandardMaterial({ map: texture, transparent: true, roughness: 0.45 })),
       );
       label.position.set(-0.15, 0.52, 0.012);
@@ -488,6 +501,14 @@ export class Showroom {
       motif.add(scan);
     }
     zone.add(motif);
+  }
+
+  private sharedGeometry<T extends BufferGeometry>(key: string, create: () => T): T {
+    const existing = this.sharedGeometries.get(key);
+    if (existing) return existing as T;
+    const geometry = this.keepGeometry(create());
+    this.sharedGeometries.set(key, geometry);
+    return geometry;
   }
 
   private keepGeometry<T extends BufferGeometry>(geometry: T): T {

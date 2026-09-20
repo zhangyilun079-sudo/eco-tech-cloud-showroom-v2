@@ -5,6 +5,8 @@ import {
   Group,
   HemisphereLight,
   RectAreaLight,
+  SpotLight,
+  Object3D,
 } from 'three';
 
 export class LightingRig extends Group {
@@ -31,9 +33,24 @@ export class LightingRig extends Group {
     architecturalLight.position.set(0, 7.4, -9.5);
     architecturalLight.lookAt(0, 2, 0);
 
-    const entranceFill = new RectAreaLight('#e8fbff', 5, 12, 4);
+    const entranceFill = new RectAreaLight('#e8fbff', 4.2, 12, 4);
     entranceFill.position.set(0, 6.2, 10);
     entranceFill.lookAt(0, 1.5, 0);
+
+    // Narrow, soft spotlights keep each display bay legible without competing
+    // with the architectural daylight or turning the room into a glowing set.
+    const bayPositions: readonly [number, number, number][] = [
+      [-8.4, 6.5, -6.8], [0, 6.5, -6.8], [8.4, 6.5, -6.8],
+      [-11.2, 6.1, 1.25], [11.2, 6.1, 1.25],
+    ];
+    bayPositions.forEach(([x, y, z], index) => {
+      const target = new Object3D();
+      target.position.set(x, 0.8, index < 3 ? -8.25 : 1.25);
+      const spot = new SpotLight('#f2fffb', 22, 10, Math.PI / 7, 0.62, 1.65);
+      spot.position.set(x, y, z);
+      spot.target = target;
+      this.add(spot, target);
+    });
 
     this.add(skyFill, ambient, sun, architecturalLight, entranceFill);
   }
