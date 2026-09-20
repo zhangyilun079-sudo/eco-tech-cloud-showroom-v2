@@ -71,11 +71,11 @@ export class CentralDataCore extends Group {
 
   private createPlatform(): void {
     const surface = this.keepMaterial(new MeshPhysicalMaterial({
-      color: '#eef8f6', roughness: 0.24, metalness: 0.08, clearcoat: 0.65,
+      color: '#08191c', roughness: 0.24, metalness: 0.72, clearcoat: 0.65,
       clearcoatRoughness: 0.24,
     }));
     const edge = this.keepMaterial(new MeshStandardMaterial({
-      color: '#64d8cf', emissive: '#35b9b1', emissiveIntensity: 0.8, roughness: 0.3,
+      color: '#64d8cf', emissive: '#35b9b1', emissiveIntensity: 1.6, roughness: 0.3,
     }));
     const platform = new Mesh(this.keepGeometry(new CylinderGeometry(2.05, 2.22, 0.3, 64)), surface);
     platform.name = 'Circular data core platform';
