@@ -1,10 +1,11 @@
 import { MOUSE, PerspectiveCamera, Vector3 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-// Begin just outside the stepped entrance, looking through the atrium toward
-// the arc of exhibition bays.
-const INITIAL_CAMERA_POSITION = new Vector3(9.8, 6.3, 15.5);
-const INITIAL_TARGET = new Vector3(0, 2.1, -0.8);
+// Begin above and beyond the arrival threshold. The wide entrance perspective
+// establishes the unobstructed hall, data core, and several perimeter bays in
+// one view before the visitor starts navigating.
+const INITIAL_CAMERA_POSITION = new Vector3(8.8, 8.6, 21.5);
+const INITIAL_TARGET = new Vector3(0, 1.65, -1.5);
 const MIN_TARGET = new Vector3(-11, 0.75, -9);
 const MAX_TARGET = new Vector3(11, 5, 9);
 
@@ -25,7 +26,7 @@ export class CameraController {
 
   public constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
-    this.camera = new PerspectiveCamera(48, 1, 0.1, 120);
+    this.camera = new PerspectiveCamera(56, 1, 0.1, 120);
     this.camera.position.copy(INITIAL_CAMERA_POSITION);
 
     this.controls = new OrbitControls(this.camera, canvas);
@@ -34,7 +35,7 @@ export class CameraController {
     // rather than continuing to drift around precision exhibits.
     this.controls.enableDamping = false;
     this.controls.minDistance = 5;
-    this.controls.maxDistance = 27;
+    this.controls.maxDistance = 34;
     this.controls.maxPolarAngle = Math.PI * 0.48;
     this.controls.minPolarAngle = Math.PI * 0.16;
     this.controls.enablePan = true;
