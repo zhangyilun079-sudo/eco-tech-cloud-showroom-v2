@@ -1,8 +1,10 @@
 import { MOUSE, PerspectiveCamera, Vector3 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-const INITIAL_CAMERA_POSITION = new Vector3(10, 6.5, 13);
-const INITIAL_TARGET = new Vector3(0, 2.2, 0);
+// Begin just outside the stepped entrance, looking through the atrium toward
+// the arc of exhibition bays.
+const INITIAL_CAMERA_POSITION = new Vector3(9.8, 6.3, 15.5);
+const INITIAL_TARGET = new Vector3(0, 2.1, -0.8);
 const MIN_TARGET = new Vector3(-11, 0.75, -9);
 const MAX_TARGET = new Vector3(11, 5, 9);
 
