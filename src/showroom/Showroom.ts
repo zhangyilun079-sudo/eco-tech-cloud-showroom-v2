@@ -150,9 +150,14 @@ export class Showroom {
     const wall = this.keepMaterial(new MeshStandardMaterial({
       color: '#07161b', roughness: 0.5, metalness: 0.58, side: DoubleSide,
     }));
-    // A segmented 255° inner skin defines the cylinder while leaving a broad,
-    // completely unobstructed opening toward the camera at +Z.
-    const shell = new Mesh(this.keepGeometry(new CylinderGeometry(15.15, 15.15, 10.2, 72, 1, true, -Math.PI * 0.71, Math.PI * 1.42)), wall);
+    // Preserve the cylindrical enclosure while removing a generous 72° front
+    // sector. Three's cylinder starts at +Z, so the skin begins after the
+    // opening and wraps around the back of the hall.
+    const entranceHalfAngle = Math.PI * 0.2;
+    const shell = new Mesh(this.keepGeometry(new CylinderGeometry(
+      15.15, 15.15, 10.2, 72, 1, true,
+      entranceHalfAngle, Math.PI * 2 - entranceHalfAngle * 2,
+    )), wall);
     shell.name = 'Open cylindrical hall inner skin';
     shell.position.set(0, 5.05, 0.35);
     this.group.add(shell);
@@ -197,13 +202,76 @@ export class Showroom {
   }
 
   private createEntrance(): void {
-    const guide = this.keepMaterial(new MeshBasicMaterial({ color: '#50e3d0', transparent: true, opacity: 0.46 }));
-    for (const x of [-1.45, 1.45]) {
-      const strip = new Mesh(this.keepGeometry(new PlaneGeometry(0.035, 10.8)), guide);
-      strip.name = 'Open entrance guidance strip';
+    const structure = this.keepMaterial(new MeshStandardMaterial({
+      color: '#08171c', metalness: 0.82, roughness: 0.24,
+    }));
+    const inset = this.keepMaterial(new MeshStandardMaterial({
+      color: '#0b2227', metalness: 0.62, roughness: 0.34,
+    }));
+    const cyan = this.keepMaterial(new MeshBasicMaterial({ color: '#8ffcf3', transparent: true, opacity: 0.92 }));
+    const green = this.keepMaterial(new MeshBasicMaterial({ color: '#63e8ac', transparent: true, opacity: 0.76 }));
+    const guide = this.keepMaterial(new MeshBasicMaterial({ color: '#50e3d0', transparent: true, opacity: 0.68 }));
+
+    // A dark arrival apron carries the architecture beyond the circular floor
+    // and makes the luminous route readable from the first camera frame.
+    const apron = new Mesh(this.keepGeometry(new PlaneGeometry(11.8, 8.2)), this.keepMaterial(new MeshPhysicalMaterial({
+      color: '#061115', roughness: 0.34, metalness: 0.56, clearcoat: 0.45,
+    })));
+    apron.name = 'Ceremonial entrance arrival apron';
+    apron.rotation.x = -Math.PI / 2;
+    apron.position.set(0, -0.015, 17.1);
+    apron.receiveShadow = true;
+    this.group.add(apron);
+
+    // The primary portal is intentionally wider than the data island. Its
+    // slim frame reads as a gateway without interrupting the central sightline.
+    for (const x of [-5.65, 5.65]) {
+      const pier = new Mesh(this.keepGeometry(new BoxGeometry(0.7, 8.7, 1.18)), structure);
+      pier.name = 'Grand entrance structural pier';
+      pier.position.set(x, 4.35, 14.2);
+      pier.rotation.y = x < 0 ? -0.07 : 0.07;
+
+      const innerEdge = new Mesh(this.keepGeometry(new BoxGeometry(0.055, 7.9, 1.23)), x < 0 ? cyan : green);
+      innerEdge.name = 'Illuminated gateway inner edge';
+      innerEdge.position.set(x < 0 ? x + 0.385 : x - 0.385, 4.1, 14.15);
+      this.group.add(pier, innerEdge);
+    }
+
+    const lintel = new Mesh(this.keepGeometry(new BoxGeometry(12, 0.66, 1.28)), structure);
+    lintel.name = 'Floating ceremonial gateway crown';
+    lintel.position.set(0, 8.72, 14.18);
+    const crownLight = new Mesh(this.keepGeometry(new BoxGeometry(10.8, 0.055, 1.33)), cyan);
+    crownLight.name = 'Gateway crown light';
+    crownLight.position.set(0, 8.34, 14.17);
+    this.group.add(lintel, crownLight);
+
+    // Angled wings visually connect the freestanding portal to the cut edges
+    // of the cylindrical shell while keeping the full entrance axis open.
+    for (const side of [-1, 1]) {
+      const wing = new Mesh(this.keepGeometry(new BoxGeometry(3.6, 7.45, 0.34)), inset);
+      wing.name = 'Entrance side architectural wing';
+      wing.position.set(side * 7.2, 3.72, 12.9);
+      wing.rotation.y = side * 0.48;
+      const wingLight = new Mesh(this.keepGeometry(new BoxGeometry(0.045, 6.65, 0.39)), side < 0 ? green : cyan);
+      wingLight.name = 'Entrance wing vertical beacon';
+      wingLight.position.set(side * 6.05, 3.72, 13.55);
+      wingLight.rotation.y = side * 0.48;
+      this.group.add(wing, wingLight);
+    }
+
+    for (const x of [-2.15, -1.45, 1.45, 2.15]) {
+      const strip = new Mesh(this.keepGeometry(new PlaneGeometry(x === -2.15 || x === 2.15 ? 0.025 : 0.055, 15.2)), guide);
+      strip.name = 'Entrance floor guidance light';
       strip.rotation.x = -Math.PI / 2;
-      strip.position.set(x, 0.025, 9.3);
+      strip.position.set(x, 0.025, 11.2);
       this.group.add(strip);
+    }
+    for (const z of [14.7, 16.2, 17.7, 19.2]) {
+      const stepLight = new Mesh(this.keepGeometry(new PlaneGeometry(5.7, 0.025)), green);
+      stepLight.name = 'Ceremonial arrival cadence light';
+      stepLight.rotation.x = -Math.PI / 2;
+      stepLight.position.set(0, 0.028, z);
+      this.group.add(stepLight);
     }
     const threshold = new Mesh(this.keepGeometry(new TorusGeometry(14.72, 0.04, 5, 96, Math.PI * 0.27)), guide);
     threshold.name = 'Open arrival threshold arc';
