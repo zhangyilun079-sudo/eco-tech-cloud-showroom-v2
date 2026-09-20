@@ -2,7 +2,6 @@ import {
   BoxGeometry,
   BufferGeometry,
   CanvasTexture,
-  CircleGeometry,
   Color,
   CylinderGeometry,
   DoubleSide,
@@ -13,6 +12,7 @@ import {
   MeshStandardMaterial,
   PlaneGeometry,
   RingGeometry,
+  SphereGeometry,
   SRGBColorSpace,
   TorusGeometry,
   Texture,
@@ -100,6 +100,7 @@ export class Showroom {
     this.createFloorAndAtrium();
     this.createArchitecture();
     this.createEntrance();
+    this.createHumanScaleFurnishings();
     this.group.add(this.centralDataCore);
     this.zones = ZONE_LAYOUTS.map((layout) => this.createZone(layout));
   }
@@ -133,21 +134,26 @@ export class Showroom {
     const atriumMaterial = this.keepMaterial(new MeshPhysicalMaterial({
       color: '#f9ffff', roughness: 0.2, clearcoat: 0.7, clearcoatRoughness: 0.2,
     }));
-    const atrium = new Mesh(this.keepGeometry(new CircleGeometry(4.7, 72)), atriumMaterial);
-    atrium.name = 'Central circular atrium floor';
-    atrium.rotation.x = -Math.PI / 2;
-    atrium.position.y = 0.025;
+    const atrium = new Mesh(this.keepGeometry(new CylinderGeometry(5.35, 5.5, 0.24, 72)), atriumMaterial);
+    atrium.name = 'Raised central circular presentation platform';
+    atrium.position.y = 0.1;
     atrium.receiveShadow = true;
     this.group.add(atrium);
 
     const accentMaterial = this.keepMaterial(new MeshStandardMaterial({
       color: '#63d8d0', emissive: '#3abbb6', emissiveIntensity: 0.9, roughness: 0.22,
     }));
-    const atriumEdge = new Mesh(this.keepGeometry(new RingGeometry(4.62, 4.76, 72)), accentMaterial);
+    const atriumEdge = new Mesh(this.keepGeometry(new RingGeometry(5.25, 5.48, 72)), accentMaterial);
     atriumEdge.name = 'Atrium technology inlay';
     atriumEdge.rotation.x = -Math.PI / 2;
-    atriumEdge.position.y = 0.045;
+    atriumEdge.position.y = 0.235;
     this.group.add(atriumEdge);
+
+    const innerInlay = new Mesh(this.keepGeometry(new RingGeometry(3.65, 3.72, 72)), accentMaterial);
+    innerInlay.name = 'Central platform hierarchy inlay';
+    innerInlay.rotation.x = -Math.PI / 2;
+    innerInlay.position.y = 0.238;
+    this.group.add(innerInlay);
   }
 
   private createArchitecture(): void {
@@ -244,6 +250,37 @@ export class Showroom {
     deck.castShadow = true;
     deck.receiveShadow = true;
     gallery.add(deck);
+
+    // A visible soffit and edge beams give the balcony credible structural
+    // depth instead of allowing it to read as a floating plane.
+    const soffit = new Mesh(this.keepGeometry(new RingGeometry(10.42, 13.48, 96, 1, 0, Math.PI)), white);
+    soffit.name = 'Gallery deep structural soffit';
+    soffit.rotation.x = -Math.PI / 2;
+    soffit.position.y = 4.12;
+    soffit.castShadow = true;
+    gallery.add(soffit);
+    for (const radius of [10.38, 13.5]) {
+      const edgeBeam = new Mesh(this.keepGeometry(new TorusGeometry(radius, 0.22, 10, 96, Math.PI)), white);
+      edgeBeam.name = 'Gallery curved structural edge beam';
+      edgeBeam.rotation.x = -Math.PI / 2;
+      edgeBeam.position.y = 4.25;
+      gallery.add(edgeBeam);
+    }
+
+    // This recessed wall and lighting turn the upper circulation route into
+    // a usable inner gallery rather than just a balustrade.
+    const innerWall = new Mesh(this.keepGeometry(new BoxGeometry(18.5, 2.65, 0.24)), white);
+    innerWall.name = 'Upper gallery inner exhibition wall';
+    innerWall.position.set(0, 5.75, -10.95);
+    innerWall.castShadow = true;
+    gallery.add(innerWall);
+    const galleryLightGeometry = this.keepGeometry(new BoxGeometry(2.05, 0.055, 0.16));
+    for (const x of [-7.4, -4.45, -1.5, 1.5, 4.45, 7.4]) {
+      const fixture = new Mesh(galleryLightGeometry, light);
+      fixture.name = 'Upper gallery integrated ceiling light';
+      fixture.position.set(x, 7.02, -10.72);
+      gallery.add(fixture);
+    }
 
     const fascia = new Mesh(this.keepGeometry(new TorusGeometry(10.38, 0.16, 8, 72, Math.PI)), frame);
     fascia.name = 'Gallery inner metallic fascia';
@@ -411,6 +448,72 @@ export class Showroom {
     }
   }
 
+  private createHumanScaleFurnishings(): void {
+    const bodyMaterial = this.keepMaterial(new MeshStandardMaterial({
+      color: '#66868a', roughness: 0.78, transparent: true, opacity: 0.58,
+    }));
+    const white = this.keepMaterial(new MeshPhysicalMaterial({
+      color: '#f4f8f7', roughness: 0.4, clearcoat: 0.24,
+    }));
+    const accent = this.keepMaterial(new MeshStandardMaterial({
+      color: '#78d7cd', emissive: '#39a99f', emissiveIntensity: 0.3, roughness: 0.3,
+    }));
+    const screen = this.keepMaterial(new MeshStandardMaterial({
+      color: '#b9eeee', emissive: '#50bfb7', emissiveIntensity: 0.48, roughness: 0.22,
+    }));
+
+    // Sparse, low-contrast figures establish scale without becoming exhibits.
+    const visitorPositions: readonly [number, number, number, number][] = [
+      [-9.6, 0, -4.1, 0.15], [7.4, 0, -6.1, -0.35], [-11.8, 4.48, -5.8, 0.45],
+      [10.9, 0, 5.1, -0.5], [3.8, 0, 6.8, 0.2],
+    ];
+    visitorPositions.forEach(([x, y, z, rotation], index) => {
+      const visitor = new Group();
+      visitor.name = `Distant visitor scale silhouette ${index + 1}`;
+      const body = new Mesh(this.sharedGeometry('visitor-body', () => new CylinderGeometry(0.2, 0.29, 1.15, 10)), bodyMaterial);
+      body.position.y = 0.78;
+      visitor.add(body);
+      const head = new Mesh(this.sharedGeometry('visitor-head', () => new SphereGeometry(0.2, 12, 8)), bodyMaterial);
+      head.position.y = 1.55;
+      visitor.add(head);
+      visitor.position.set(x, y, z);
+      visitor.rotation.y = rotation;
+      this.group.add(visitor);
+    });
+
+    for (const x of [-5.8, 5.8]) {
+      const desk = new Group();
+      desk.name = 'Visitor exhibition interaction desk';
+      const base = new Mesh(this.sharedGeometry('interaction-desk', () => new BoxGeometry(2.15, 0.82, 0.72)), white);
+      base.position.y = 0.42;
+      desk.add(base);
+      const display = new Mesh(this.sharedGeometry('interaction-desk-screen', () => new BoxGeometry(1.55, 0.06, 0.44)), screen);
+      display.position.set(0, 0.87, -0.02);
+      display.rotation.x = -0.18;
+      desk.add(display);
+      const toeLight = new Mesh(this.sharedGeometry('interaction-desk-light', () => new BoxGeometry(1.72, 0.06, 0.04)), accent);
+      toeLight.position.set(0, 0.13, 0.38);
+      desk.add(toeLight);
+      desk.position.set(x, 0, 4.9);
+      desk.rotation.y = x < 0 ? -0.12 : 0.12;
+      this.group.add(desk);
+    }
+
+    for (const x of [-10.7, 10.7]) {
+      const kiosk = new Group();
+      kiosk.name = 'Freestanding visitor information kiosk';
+      const pedestal = new Mesh(this.sharedGeometry('info-kiosk', () => new BoxGeometry(0.72, 1.45, 0.42)), white);
+      pedestal.position.y = 0.73;
+      kiosk.add(pedestal);
+      const kioskScreen = new Mesh(this.sharedGeometry('info-kiosk-screen', () => new BoxGeometry(0.58, 0.72, 0.045)), screen);
+      kioskScreen.position.set(0, 1.03, 0.235);
+      kiosk.add(kioskScreen);
+      kiosk.position.set(x, 0, 7.25);
+      kiosk.rotation.y = x < 0 ? 0.32 : -0.32;
+      this.group.add(kiosk);
+    }
+  }
+
   private createZone(layout: ZoneLayout): ShowroomZone {
     const zone = new Group();
     zone.name = layout.id;
@@ -501,6 +604,56 @@ export class Showroom {
     platformAccent.rotation.x = Math.PI / 2;
     platformAccent.position.set(0, 0.3, 1.45);
     zone.add(platformAccent);
+
+    // Side returns and a lit ceiling plane define a walk-in exhibition bay;
+    // all additions sit outside the existing central attachment volume.
+    const sideReturnGeometry = this.sharedGeometry('zone-side-return', () => new BoxGeometry(0.18, 2.9, 2.55));
+    for (const x of [-2.62, 2.62]) {
+      const sideReturn = new Mesh(sideReturnGeometry, shell);
+      sideReturn.name = `${id} exhibition bay side return`;
+      sideReturn.position.set(x, 1.48, 1.22);
+      sideReturn.castShadow = true;
+      sideReturn.receiveShadow = true;
+      zone.add(sideReturn);
+    }
+    const ceilingLight = new Mesh(this.sharedGeometry('zone-ceiling-light', () => new BoxGeometry(3.55, 0.055, 0.18)), light);
+    ceilingLight.name = `${id} recessed bay lighting`;
+    ceilingLight.position.set(0, 3.54, 1.33);
+    zone.add(ceilingLight);
+
+    const consoleGroup = new Group();
+    consoleGroup.name = `${id} interactive display console`;
+    const consoleBase = new Mesh(this.sharedGeometry('zone-console-base', () => new BoxGeometry(1.22, 0.72, 0.6)), shell);
+    consoleBase.position.y = 0.36;
+    consoleGroup.add(consoleBase);
+    const consoleScreen = new Mesh(this.sharedGeometry('zone-console-screen', () => new BoxGeometry(1.03, 0.055, 0.46)), light);
+    consoleScreen.position.set(0, 0.77, -0.02);
+    consoleScreen.rotation.x = -0.2;
+    consoleGroup.add(consoleScreen);
+    const consoleTrim = new Mesh(this.sharedGeometry('zone-console-trim', () => new BoxGeometry(0.8, 0.045, 0.035)), trim);
+    consoleTrim.position.set(0, 0.2, 0.32);
+    consoleGroup.add(consoleTrim);
+    consoleGroup.position.set(1.86, 0, 2.45);
+    consoleGroup.rotation.y = -0.12;
+    zone.add(consoleGroup);
+
+    const equipmentArea = new Group();
+    equipmentArea.name = `${id} equipment display area`;
+    equipmentArea.position.set(-1.88, 0.31, 2.03);
+    const equipmentPlinth = new Mesh(this.sharedGeometry('zone-equipment-plinth', () => new BoxGeometry(1.14, 0.18, 1.15)), shell);
+    equipmentPlinth.position.y = -0.2;
+    equipmentArea.add(equipmentPlinth);
+    const equipmentBody = new Mesh(this.sharedGeometry('zone-equipment-body', () => new CylinderGeometry(0.35, 0.42, 0.9, 20)), inset);
+    equipmentBody.position.y = 0.35;
+    equipmentArea.add(equipmentBody);
+    const equipmentCap = new Mesh(this.sharedGeometry('zone-equipment-cap', () => new TorusGeometry(0.35, 0.045, 8, 24)), trim);
+    equipmentCap.rotation.x = Math.PI / 2;
+    equipmentCap.position.y = 0.8;
+    equipmentArea.add(equipmentCap);
+    const equipmentGauge = new Mesh(this.sharedGeometry('zone-equipment-gauge', () => new BoxGeometry(0.33, 0.22, 0.055)), light);
+    equipmentGauge.position.set(0, 0.43, 0.38);
+    equipmentArea.add(equipmentGauge);
+    zone.add(equipmentArea);
   }
 
   private createTitleMarker(zone: Group, id: ShowroomZoneId, theme: ZoneTheme): void {
