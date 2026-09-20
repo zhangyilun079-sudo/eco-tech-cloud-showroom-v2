@@ -36,6 +36,45 @@ interface ZoneLayout {
   readonly rotation: number;
 }
 
+interface ZoneTheme {
+  readonly title: string;
+  readonly englishTitle: string;
+  readonly descriptor: string;
+  readonly accent: string;
+  readonly accentSoft: string;
+  readonly panel: string;
+  readonly metric: string;
+  readonly motif: 'water' | 'circular' | 'energy' | 'air' | 'ecology';
+}
+
+const ZONE_THEMES: Readonly<Record<ShowroomZoneId, ZoneTheme>> = {
+  ZONE_01: {
+    title: '水环境治理', englishTitle: 'WATER ENVIRONMENT',
+    descriptor: '工业废水 · 水资源循环 · 智慧水务',
+    accent: '#25a9bd', accentSoft: '#91e1e4', panel: '#d9f1f1', metric: 'WATER LOOP  92%', motif: 'water',
+  },
+  ZONE_02: {
+    title: '固体废弃物资源化利用', englishTitle: 'RESOURCE CIRCULATION',
+    descriptor: '循环经济 · 废物资源化 · 再生技术',
+    accent: '#42a56c', accentSoft: '#a9dfb9', panel: '#e0f1e6', metric: 'RECOVERY  86%', motif: 'circular',
+  },
+  ZONE_03: {
+    title: '清洁能源', englishTitle: 'CLEAN ENERGY',
+    descriptor: '氢能 · 可再生能源 · 低碳系统',
+    accent: '#34a9a1', accentSoft: '#9ee4d9', panel: '#dff2ec', metric: 'CO₂ -68%', motif: 'energy',
+  },
+  ZONE_04: {
+    title: '大气环境治理', englishTitle: 'AIR ENVIRONMENT',
+    descriptor: '空气质量 · VOCs 治理 · 排放控制',
+    accent: '#4a91ba', accentSoft: '#a9d6e8', panel: '#dfeef3', metric: 'AQI  32', motif: 'air',
+  },
+  ZONE_05: {
+    title: '生态修复与智慧监测', englishTitle: 'ECO RESTORATION',
+    descriptor: '生态修复 · 遥感 · 环境监测',
+    accent: '#548f70', accentSoft: '#b0d9bf', panel: '#e2eee5', metric: 'ECO INDEX  78', motif: 'ecology',
+  },
+};
+
 // These anchors are part of the showroom/exhibit contract. The architecture is
 // arranged around them rather than moving exhibits when the shell changes.
 const ZONE_LAYOUTS: readonly ZoneLayout[] = [
@@ -237,18 +276,21 @@ export class Showroom {
     const shell = this.keepMaterial(new MeshPhysicalMaterial({
       color: '#f8faf9', roughness: 0.28, clearcoat: 0.38, clearcoatRoughness: 0.28,
     }));
+    const theme = ZONE_THEMES[layout.id];
     const inset = this.keepMaterial(new MeshStandardMaterial({
-      color: '#dcebed', roughness: 0.5, metalness: 0.04,
+      color: theme.panel, roughness: 0.5, metalness: 0.04,
     }));
     const trim = this.keepMaterial(new MeshStandardMaterial({
-      color: '#318f94', roughness: 0.28, metalness: 0.48,
+      color: theme.accent, roughness: 0.28, metalness: 0.48,
     }));
     const light = this.keepMaterial(new MeshStandardMaterial({
-      color: '#dffffb', emissive: '#5ddbd0', emissiveIntensity: 1.35, roughness: 0.2,
+      color: theme.accentSoft, emissive: theme.accent, emissiveIntensity: 0.75, roughness: 0.2,
     }));
 
-    this.createExhibitionBay(zone, shell, inset, trim, light, layout.id);
-    this.createTitleMarker(zone, layout.id);
+    this.createExhibitionBay(zone, shell, inset, trim, light, layout.id, theme);
+    this.createTitleMarker(zone, layout.id, theme);
+    this.createDataDisplay(zone, theme, trim, light);
+    this.createTechnologyMotif(zone, theme, trim, light);
 
     // Local transform intentionally matches the original attachment contract.
     const exhibitPlaceholder = new Group();
@@ -263,7 +305,7 @@ export class Showroom {
     return { id: layout.id, position: zone.position.clone(), hotspotPosition, exhibitPlaceholder };
   }
 
-  private createExhibitionBay(zone: Group, shell: Material, inset: Material, trim: Material, light: Material, id: ShowroomZoneId): void {
+  private createExhibitionBay(zone: Group, shell: Material, inset: Material, trim: Material, light: Material, id: ShowroomZoneId, theme: ZoneTheme): void {
     const back = new Mesh(this.keepGeometry(new BoxGeometry(5.15, 3.45, 0.16)), shell);
     back.name = `${id} white exhibition wall`;
     back.position.set(0, 1.82, 0);
@@ -274,6 +316,14 @@ export class Showroom {
     insetPanel.name = `${id} integrated display backdrop`;
     insetPanel.position.set(0, 1.45, 0.1);
     zone.add(insetPanel);
+
+    const featurePanel = new Mesh(
+      this.keepGeometry(new PlaneGeometry(4.08, 1.4)),
+      this.keepMaterial(new MeshStandardMaterial({ color: theme.panel, roughness: 0.42 })),
+    );
+    featurePanel.name = `${id} themed ecological background wall`;
+    featurePanel.position.set(0, 1.46, 0.124);
+    zone.add(featurePanel);
 
     const uprightGeometry = this.keepGeometry(new BoxGeometry(0.16, 3.7, 0.38));
     for (const x of [-2.65, 2.65]) {
@@ -309,19 +359,21 @@ export class Showroom {
     zone.add(platformAccent);
   }
 
-  private createTitleMarker(zone: Group, id: ShowroomZoneId): void {
+  private createTitleMarker(zone: Group, id: ShowroomZoneId, theme: ZoneTheme): void {
     const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 128;
+    canvas.width = 1024;
+    canvas.height = 192;
     const context = canvas.getContext('2d');
     if (!context) return;
     context.clearRect(0, 0, canvas.width, canvas.height);
-    context.fillStyle = '#efffff';
-    context.font = '600 43px Arial, sans-serif';
-    context.letterSpacing = '9px';
+    context.fillStyle = '#f5ffff';
+    context.font = '600 52px "Noto Sans SC", "Microsoft YaHei", sans-serif';
     context.textAlign = 'center';
     context.textBaseline = 'middle';
-    context.fillText(id, canvas.width / 2, canvas.height / 2);
+    context.fillText(theme.title, canvas.width / 2, 69);
+    context.fillStyle = '#c9eeee';
+    context.font = '500 21px Arial, sans-serif';
+    context.fillText(`${id}  /  ${theme.englishTitle}`, canvas.width / 2, 132);
 
     const texture = new CanvasTexture(canvas);
     texture.colorSpace = SRGBColorSpace;
@@ -329,10 +381,113 @@ export class Showroom {
     const material = this.keepMaterial(new MeshStandardMaterial({
       map: texture, transparent: true, roughness: 0.35, metalness: 0.02,
     }));
-    const marker = new Mesh(this.keepGeometry(new PlaneGeometry(2.85, 0.7)), material);
+    const marker = new Mesh(this.keepGeometry(new PlaneGeometry(4.05, 0.76)), material);
     marker.name = `${id} title marker`;
     marker.position.set(0, 2.92, 0.18);
     zone.add(marker);
+  }
+
+  private createDataDisplay(zone: Group, theme: ZoneTheme, trim: Material, light: Material): void {
+    const display = new Group();
+    display.name = `${zone.name} environmental data visualization`;
+    display.position.set(1.42, 1.47, 0.155);
+
+    const baseline = new Mesh(this.keepGeometry(new BoxGeometry(1.02, 0.025, 0.025)), trim);
+    baseline.position.set(0, -0.42, 0);
+    display.add(baseline);
+    const values = [0.3, 0.56, 0.43, 0.78, 0.65, 0.92];
+    values.forEach((value, index) => {
+      const bar = new Mesh(this.keepGeometry(new BoxGeometry(0.095, value, 0.028)), index === 5 ? light : trim);
+      bar.position.set(-0.43 + index * 0.17, -0.41 + value / 2, 0.005);
+      display.add(bar);
+    });
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 128;
+    const context = canvas.getContext('2d');
+    if (context) {
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.fillStyle = theme.accent;
+      context.font = '600 32px Arial, sans-serif';
+      context.textAlign = 'center';
+      context.fillText(theme.metric, 256, 45);
+      context.fillStyle = '#527276';
+      context.font = '500 21px "Noto Sans SC", sans-serif';
+      context.fillText(theme.descriptor, 256, 94);
+      const texture = new CanvasTexture(canvas);
+      texture.colorSpace = SRGBColorSpace;
+      this.textures.push(texture);
+      const label = new Mesh(
+        this.keepGeometry(new PlaneGeometry(1.55, 0.39)),
+        this.keepMaterial(new MeshStandardMaterial({ map: texture, transparent: true, roughness: 0.45 })),
+      );
+      label.position.set(-0.15, 0.52, 0.012);
+      display.add(label);
+    }
+    zone.add(display);
+  }
+
+  private createTechnologyMotif(zone: Group, theme: ZoneTheme, trim: Material, light: Material): void {
+    const motif = new Group();
+    motif.name = `${zone.name} ${theme.motif} technology motif`;
+    motif.position.set(-1.42, 1.52, 0.17);
+
+    if (theme.motif === 'water') {
+      for (let index = 0; index < 3; index += 1) {
+        const loop = new Mesh(this.keepGeometry(new TorusGeometry(0.22 + index * 0.14, 0.025, 8, 32, Math.PI * 1.5)), index === 2 ? light : trim);
+        loop.rotation.z = -Math.PI / 4;
+        motif.add(loop);
+      }
+    } else if (theme.motif === 'circular') {
+      const loop = new Mesh(this.keepGeometry(new TorusGeometry(0.52, 0.045, 8, 40, Math.PI * 1.72)), trim);
+      loop.rotation.z = 0.15;
+      motif.add(loop);
+      for (const angle of [0.15, 2.3, 4.5]) {
+        const node = new Mesh(this.keepGeometry(new BoxGeometry(0.16, 0.16, 0.06)), light);
+        node.position.set(Math.cos(angle) * 0.52, Math.sin(angle) * 0.52, 0);
+        node.rotation.z = angle;
+        motif.add(node);
+      }
+    } else if (theme.motif === 'energy') {
+      const nodeGeometry = this.keepGeometry(new CylinderGeometry(0.09, 0.09, 0.07, 20));
+      const positions: readonly [number, number][] = [[-0.46, -0.15], [0, 0.42], [0.48, -0.1], [0, -0.48]];
+      positions.forEach(([x, y]) => {
+        const node = new Mesh(nodeGeometry, light);
+        node.rotation.x = Math.PI / 2;
+        node.position.set(x, y, 0);
+        motif.add(node);
+      });
+      [[-0.23, 0.135, -0.72], [0.24, 0.16, 0.68], [0.24, -0.29, -0.83], [-0.23, -0.315, 0.84]].forEach(([x, y, angle]) => {
+        const link = new Mesh(this.keepGeometry(new BoxGeometry(0.64, 0.035, 0.035)), trim);
+        link.position.set(x, y, -0.01);
+        link.rotation.z = angle;
+        motif.add(link);
+      });
+    } else if (theme.motif === 'air') {
+      [0.72, 0.92, 0.62].forEach((width, index) => {
+        const stream = new Mesh(this.keepGeometry(new TorusGeometry(width / 2, 0.025, 6, 28, Math.PI)), index === 1 ? light : trim);
+        stream.scale.y = 0.3;
+        stream.position.set(-0.12 + index * 0.11, 0.3 - index * 0.3, 0);
+        stream.rotation.z = index % 2 ? Math.PI : 0;
+        motif.add(stream);
+      });
+    } else {
+      const gridGeometry = this.keepGeometry(new BoxGeometry(0.025, 1.12, 0.025));
+      for (let index = -2; index <= 2; index += 1) {
+        const vertical = new Mesh(gridGeometry, index === 0 ? light : trim);
+        vertical.position.x = index * 0.22;
+        motif.add(vertical);
+        const horizontal = new Mesh(gridGeometry, trim);
+        horizontal.rotation.z = Math.PI / 2;
+        horizontal.position.y = index * 0.22;
+        motif.add(horizontal);
+      }
+      const scan = new Mesh(this.keepGeometry(new RingGeometry(0.23, 0.28, 32)), light);
+      scan.position.z = 0.025;
+      motif.add(scan);
+    }
+    zone.add(motif);
   }
 
   private keepGeometry<T extends BufferGeometry>(geometry: T): T {
