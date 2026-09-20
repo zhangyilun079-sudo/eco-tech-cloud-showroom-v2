@@ -83,7 +83,7 @@ export class CentralDataCore extends Group {
       clearcoatRoughness: 0.24,
     }));
     const edge = this.keepMaterial(new MeshStandardMaterial({
-      color: '#64d8cf', emissive: '#35b9b1', emissiveIntensity: 1.6, roughness: 0.3,
+      color: '#64d8cf', emissive: '#35b9b1', emissiveIntensity: 1.05, roughness: 0.34,
     }));
     const platformLayers = [
       { radius: 2.7, height: 0.16, y: 0.08 },
@@ -114,7 +114,7 @@ export class CentralDataCore extends Group {
 
     const dataShell = new Mesh(this.keepGeometry(new CylinderGeometry(1.34, 1.55, 2.5, 36, 1, true)), this.keepMaterial(new MeshPhysicalMaterial({
       color: '#57dfd5', emissive: '#1b8d89', emissiveIntensity: 0.16, transparent: true,
-      opacity: 0.075, transmission: 0.78, roughness: 0.08, depthWrite: false, side: DoubleSide,
+      opacity: 0.06, transmission: 0.86, thickness: 0.12, roughness: 0.14, depthWrite: false, side: DoubleSide,
     })));
     dataShell.name = 'Transparent ecological data shell';
     dataShell.position.y = 1.73;
@@ -127,11 +127,11 @@ export class CentralDataCore extends Group {
 
     const shell = this.keepMaterial(new MeshPhysicalMaterial({
       color: '#75e6dd', emissive: '#1c8f8d', emissiveIntensity: 0.11,
-      transparent: true, opacity: 0.075, transmission: 0.62, roughness: 0.12,
+      transparent: true, opacity: 0.06, transmission: 0.78, roughness: 0.16,
       thickness: 0.16, depthWrite: false, side: DoubleSide,
     }));
     const grid = this.keepMaterial(new MeshBasicMaterial({
-      color: '#66dcd4', transparent: true, opacity: 0.2, wireframe: true,
+      color: '#66dcd4', transparent: true, opacity: 0.16, wireframe: true,
       depthWrite: false, blending: AdditiveBlending,
     }));
     const sphereGeometry = this.keepGeometry(new SphereGeometry(1.02, 28, 18));
@@ -152,7 +152,7 @@ export class CentralDataCore extends Group {
     this.add(this.globe);
 
     const ringMaterial = this.keepMaterial(new MeshBasicMaterial({
-      color: '#7ce4d7', transparent: true, opacity: 0.32, depthWrite: false,
+      color: '#7ce4d7', transparent: true, opacity: 0.24, depthWrite: false,
     }));
     this.orbitRings.name = 'Ecological data orbital rings';
     this.orbitRings.position.y = 2.05;
@@ -177,7 +177,7 @@ export class CentralDataCore extends Group {
     METRICS.forEach((metric, index) => {
       const texture = this.createMetricTexture(metric);
       const material = this.keepMaterial(new MeshBasicMaterial({
-        map: texture, transparent: true, opacity: 0.82, depthWrite: false, side: DoubleSide,
+        map: texture, transparent: true, opacity: 0.9, depthWrite: false, side: DoubleSide,
       }));
       const panel = new Mesh(panelGeometry, material);
       const angle = index * Math.PI * 2 / METRICS.length + Math.PI / 4;
@@ -221,9 +221,9 @@ export class CentralDataCore extends Group {
     canvas.height = 232;
     const context = canvas.getContext('2d');
     if (context) {
-      context.fillStyle = 'rgba(6, 40, 43, 0.76)';
+      context.fillStyle = 'rgba(4, 28, 32, 0.9)';
       context.fillRect(2, 2, 508, 228);
-      context.strokeStyle = 'rgba(113, 226, 211, 0.72)';
+      context.strokeStyle = 'rgba(113, 226, 211, 0.62)';
       context.lineWidth = 3;
       context.strokeRect(2, 2, 508, 228);
       context.fillStyle = metric.color;
@@ -252,7 +252,7 @@ export class CentralDataCore extends Group {
     const halo = new Mesh(this.keepGeometry(new CylinderGeometry(0.7, 1.02, 1.45, 32, 1, true)), haloMaterial);
     halo.position.y = 1.15;
     this.add(halo);
-    const light = new PointLight('#65e3d7', 4.2, 4.6, 2);
+    const light = new PointLight('#65e3d7', 3.1, 4.8, 2);
     light.position.y = 1.5;
     this.add(light);
   }

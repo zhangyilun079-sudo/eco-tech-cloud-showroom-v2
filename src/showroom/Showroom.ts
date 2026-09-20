@@ -7,6 +7,7 @@ import {
   CylinderGeometry,
   DoubleSide,
   EdgesGeometry,
+  Float32BufferAttribute,
   Group,
   LineBasicMaterial,
   LineSegments,
@@ -16,6 +17,8 @@ import {
   MeshPhysicalMaterial,
   MeshStandardMaterial,
   PlaneGeometry,
+  Points,
+  PointsMaterial,
   RingGeometry,
   SphereGeometry,
   SRGBColorSpace,
@@ -100,6 +103,7 @@ export class Showroom {
   private readonly materials: Material[] = [];
   private readonly textures: Texture[] = [];
   private readonly holograms: Group[] = [];
+  private readonly atmosphere = new Group();
   private readonly dataDisplays: AnimatedDataDisplay[] = [];
   private elapsed = 0;
   private dataFrame = -1;
@@ -109,6 +113,7 @@ export class Showroom {
     this.createCircularHall();
     this.createCeilingRings();
     this.createEntrance();
+    this.createAtmosphere();
     this.group.add(this.centralDataCore);
     this.zones = ZONE_LAYOUTS.map((layout) => this.createZone(layout));
   }
@@ -120,6 +125,10 @@ export class Showroom {
       hologram.rotation.y += delta * (0.14 + index * 0.012);
       hologram.position.y = 2.25 + Math.sin(this.elapsed * 0.75 + index) * 0.09;
     });
+    // The atmosphere is deliberately one batched point cloud. This update is
+    // reached only in showroom mode, so no decorative work survives offscreen.
+    this.atmosphere.rotation.y = this.elapsed * 0.006;
+    this.atmosphere.position.y = Math.sin(this.elapsed * 0.12) * 0.035;
     const nextDataFrame = Math.floor(this.elapsed * 10);
     if (nextDataFrame !== this.dataFrame) {
       this.dataFrame = nextDataFrame;
@@ -139,7 +148,7 @@ export class Showroom {
 
   private createCircularHall(): void {
     const floor = this.keepMaterial(new MeshPhysicalMaterial({
-      color: '#071216', roughness: 0.3, metalness: 0.5, clearcoat: 0.6, clearcoatRoughness: 0.2,
+      color: '#08171b', roughness: 0.38, metalness: 0.62, clearcoat: 0.46, clearcoatRoughness: 0.3,
     }));
     const floorMesh = new Mesh(this.keepGeometry(new CylinderGeometry(15.4, 15.4, 0.22, 96)), floor);
     floorMesh.name = 'Dark circular reflective floor';
@@ -148,7 +157,7 @@ export class Showroom {
     this.group.add(floorMesh);
 
     const wall = this.keepMaterial(new MeshStandardMaterial({
-      color: '#07161b', roughness: 0.5, metalness: 0.58, side: DoubleSide,
+      color: '#091a20', roughness: 0.42, metalness: 0.72, side: DoubleSide,
     }));
     // Preserve the cylindrical enclosure while removing a generous 72° front
     // sector. Three's cylinder starts at +Z, so the skin begins after the
@@ -287,10 +296,14 @@ export class Showroom {
     zone.position.set(...layout.position);
     zone.rotation.y = layout.rotation;
 
-    const structure = this.keepMaterial(new MeshStandardMaterial({ color: '#0a1b20', metalness: 0.7, roughness: 0.28 }));
-    const inset = this.keepMaterial(new MeshStandardMaterial({ color: '#041116', metalness: 0.3, roughness: 0.62 }));
-    const glow = this.keepMaterial(new MeshBasicMaterial({ color: theme.accent, transparent: true, opacity: 0.88 }));
-    const screen = this.keepMaterial(new MeshBasicMaterial({ color: new Color(theme.accent).multiplyScalar(0.18), transparent: true, opacity: 0.82 }));
+    const structure = this.keepMaterial(new MeshStandardMaterial({ color: '#0c2026', metalness: 0.82, roughness: 0.3 }));
+    const inset = this.keepMaterial(new MeshStandardMaterial({ color: '#06151a', metalness: 0.48, roughness: 0.55 }));
+    const glow = this.keepMaterial(new MeshBasicMaterial({ color: theme.accent, transparent: true, opacity: 0.72, toneMapped: false }));
+    const screen = this.keepMaterial(new MeshPhysicalMaterial({
+      color: new Color(theme.accent).multiplyScalar(0.12), emissive: theme.accent,
+      emissiveIntensity: 0.22, transparent: true, opacity: 0.72, roughness: 0.2,
+      clearcoat: 0.45, clearcoatRoughness: 0.18, toneMapped: true,
+    }));
 
     const back = new Mesh(this.keepGeometry(new BoxGeometry(7.2, 8.2, 0.32)), inset);
     back.name = 'Double-height digital bay backdrop';
@@ -367,8 +380,8 @@ export class Showroom {
 
   private createPodArchitecture(zone: Group, theme: ZoneTheme, structure: Material, glow: Material): void {
     const glass = this.keepMaterial(new MeshPhysicalMaterial({
-      color: theme.accent, emissive: theme.accent, emissiveIntensity: 0.14, transparent: true,
-      opacity: 0.12, transmission: 0.72, roughness: 0.12, metalness: 0.08, depthWrite: false,
+      color: '#b5f5ee', emissive: theme.accent, emissiveIntensity: 0.1, transparent: true,
+      opacity: 0.14, transmission: 0.82, thickness: 0.12, roughness: 0.16, metalness: 0.02, depthWrite: false,
       side: DoubleSide,
     }));
     const deck = new Mesh(this.keepGeometry(new CylinderGeometry(2.55, 2.75, 0.2, 48, 1, false, 0, Math.PI)), structure);
@@ -414,12 +427,12 @@ export class Showroom {
     hologram.name = `${theme.englishTitle} floating holographic preview`;
     hologram.position.set(0, 2.25, 0.3);
     const material = this.keepMaterial(new MeshBasicMaterial({
-      color: theme.accent, wireframe: true, transparent: true, opacity: 0.42,
+      color: theme.accent, wireframe: true, transparent: true, opacity: 0.3,
       depthWrite: false, blending: AdditiveBlending,
     }));
     const solid = this.keepMaterial(new MeshPhysicalMaterial({
       color: theme.accent, emissive: theme.accent, emissiveIntensity: 0.3,
-      transparent: true, opacity: 0.075, roughness: 0.15, depthWrite: false,
+      transparent: true, opacity: 0.055, roughness: 0.2, depthWrite: false,
     }));
     const geometry = this.keepGeometry(theme.motif === 'water'
       ? new CylinderGeometry(0.85, 1.2, 1.8, 16, 4)
@@ -436,7 +449,7 @@ export class Showroom {
     hologram.add(form, wire);
 
     const edges = new LineSegments(this.keepGeometry(new EdgesGeometry(geometry, 18)), this.keepMaterial(new LineBasicMaterial({
-      color: theme.accent, transparent: true, opacity: 0.55, blending: AdditiveBlending,
+      color: theme.accent, transparent: true, opacity: 0.42, blending: AdditiveBlending,
     })));
     edges.scale.setScalar(1.03);
     hologram.add(edges);
@@ -484,6 +497,26 @@ export class Showroom {
     texture.colorSpace = SRGBColorSpace;
     this.textures.push(texture);
     return texture;
+  }
+
+  private createAtmosphere(): void {
+    this.atmosphere.name = 'Restrained ambient data particles';
+    const positions: number[] = [];
+    // Deterministic distribution avoids visual popping between page loads and
+    // keeps the central sightline almost entirely clear.
+    for (let index = 0; index < 110; index += 1) {
+      const angle = index * 2.399963;
+      const radius = 4.5 + ((index * 37) % 100) / 100 * 9.2;
+      positions.push(Math.cos(angle) * radius, 0.8 + ((index * 53) % 100) / 100 * 7.2, Math.sin(angle) * radius - 0.3);
+    }
+    const geometry = this.keepGeometry(new BufferGeometry());
+    geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
+    const material = this.keepMaterial(new PointsMaterial({
+      color: '#7bded4', size: 0.025, transparent: true, opacity: 0.22,
+      depthWrite: false, blending: AdditiveBlending, sizeAttenuation: true,
+    }));
+    this.atmosphere.add(new Points(geometry, material));
+    this.group.add(this.atmosphere);
   }
 
   private createDataDisplay(theme: ZoneTheme, phase: number): AnimatedDataDisplay {
