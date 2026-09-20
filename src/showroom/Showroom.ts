@@ -167,37 +167,41 @@ export class Showroom {
 
     // A glazed perimeter keeps the rear of the hall visually open while its
     // white structural piers give the five bays a corporate exhibition rhythm.
-    this.createWindowWall(new Vector3(0, 4.2, -11.1), new Vector3(30, 8.4, 0.08), false, glass, frame, white);
-    this.createWindowWall(new Vector3(-14.85, 4.2, 0), new Vector3(0.08, 8.4, 22), true, glass, frame, white);
-    this.createWindowWall(new Vector3(14.85, 4.2, 0), new Vector3(0.08, 8.4, 22), true, glass, frame, white);
+    this.createDistantEnvironment();
+    this.createWindowWall(new Vector3(0, 4.75, -11.7), new Vector3(30, 9.5, 0.08), false, glass, frame, white);
+    this.createWindowWall(new Vector3(-14.85, 4.75, -0.35), new Vector3(0.08, 9.5, 22.7), true, glass, frame, white);
+    this.createWindowWall(new Vector3(14.85, 4.75, -0.35), new Vector3(0.08, 9.5, 22.7), true, glass, frame, white);
 
     const perimeterBeam = new Mesh(this.keepGeometry(new BoxGeometry(30.1, 0.32, 0.48)), white);
     perimeterBeam.name = 'Rear floating roof beam';
-    perimeterBeam.position.set(0, 8.35, -10.9);
+    perimeterBeam.position.set(0, 9.35, -11.48);
     perimeterBeam.castShadow = true;
     this.group.add(perimeterBeam);
 
     const roofRing = new Mesh(this.keepGeometry(new TorusGeometry(5.45, 0.17, 12, 96)), white);
     roofRing.name = 'Central atrium ceiling ring';
     roofRing.rotation.x = Math.PI / 2;
-    roofRing.position.y = 8.25;
+    roofRing.position.y = 9.08;
     roofRing.castShadow = true;
     this.group.add(roofRing);
     const luminousRing = new Mesh(this.keepGeometry(new TorusGeometry(4.95, 0.055, 8, 96)), light);
     luminousRing.name = 'Suspended circular daylight feature';
     luminousRing.rotation.x = Math.PI / 2;
-    luminousRing.position.y = 8.08;
+    luminousRing.position.y = 8.9;
     this.group.add(luminousRing);
 
     const radialGeometry = this.keepGeometry(new BoxGeometry(0.16, 0.16, 9.3));
     for (let index = 0; index < 8; index += 1) {
       const beam = new Mesh(radialGeometry, frame);
       beam.name = 'Atrium radial roof member';
-      beam.position.y = 8.27;
+      beam.position.y = 9.12;
       beam.rotation.y = index * Math.PI / 4;
       beam.castShadow = true;
       this.group.add(beam);
     }
+
+    this.createUpperGallery(white, frame, glass, light);
+    this.createLayeredCeiling(white, frame, light);
   }
 
   private createWindowWall(position: Vector3, size: Vector3, alongZ: boolean, glass: Material, frame: Material, white: Material): void {
@@ -206,8 +210,8 @@ export class Showroom {
     pane.position.copy(position);
     this.group.add(pane);
 
-    const verticalGeometry = this.keepGeometry(new BoxGeometry(alongZ ? 0.18 : 0.13, 8.4, alongZ ? 0.13 : 0.18));
-    const divisions = alongZ ? 5 : 7;
+    const verticalGeometry = this.keepGeometry(new BoxGeometry(alongZ ? 0.2 : 0.14, size.y, alongZ ? 0.14 : 0.2));
+    const divisions = alongZ ? 8 : 12;
     const span = alongZ ? size.z : size.x;
     for (let index = 0; index <= divisions; index += 1) {
       const offset = -span / 2 + index * span / divisions;
@@ -219,26 +223,121 @@ export class Showroom {
       mullion.castShadow = true;
       this.group.add(mullion);
     }
-    const horizontal = new Mesh(
-      this.keepGeometry(new BoxGeometry(alongZ ? 0.14 : size.x, 0.12, alongZ ? size.z : 0.14)),
-      frame,
-    );
-    horizontal.name = 'Curtain wall transom';
-    horizontal.position.copy(position);
-    this.group.add(horizontal);
+    const transomGeometry = this.keepGeometry(new BoxGeometry(alongZ ? 0.14 : size.x, 0.11, alongZ ? size.z : 0.14));
+    for (const y of [1.05, 3.25, 5.5, 7.75, 9.43]) {
+      const horizontal = new Mesh(transomGeometry, frame);
+      horizontal.name = 'Curtain wall architectural transom';
+      horizontal.position.copy(position);
+      horizontal.position.y = y;
+      this.group.add(horizontal);
+    }
+  }
+
+  private createUpperGallery(white: Material, frame: Material, glass: Material, light: Material): void {
+    const gallery = new Group();
+    gallery.name = 'Second level circular gallery';
+
+    const deck = new Mesh(this.keepGeometry(new RingGeometry(10.35, 13.55, 96, 1, 0, Math.PI)), white);
+    deck.name = 'Curved upper gallery walkway';
+    deck.rotation.x = -Math.PI / 2;
+    deck.position.y = 4.45;
+    deck.castShadow = true;
+    deck.receiveShadow = true;
+    gallery.add(deck);
+
+    const fascia = new Mesh(this.keepGeometry(new TorusGeometry(10.38, 0.16, 8, 72, Math.PI)), frame);
+    fascia.name = 'Gallery inner metallic fascia';
+    fascia.rotation.x = -Math.PI / 2;
+    fascia.position.y = 4.38;
+    gallery.add(fascia);
+    const underlight = new Mesh(this.keepGeometry(new TorusGeometry(11.55, 0.045, 6, 72, Math.PI)), light);
+    underlight.name = 'Gallery integrated under-light';
+    underlight.rotation.x = -Math.PI / 2;
+    underlight.position.y = 4.28;
+    gallery.add(underlight);
+
+    const postGeometry = this.keepGeometry(new BoxGeometry(0.075, 1.25, 0.075));
+    const paneGeometry = this.keepGeometry(new BoxGeometry(1.7, 1.02, 0.045));
+    const supportGeometry = this.keepGeometry(new CylinderGeometry(0.14, 0.19, 4.42, 12));
+    const segments = 16;
+    for (let index = 0; index <= segments; index += 1) {
+      const angle = Math.PI + index * Math.PI / segments;
+      const radius = 10.25;
+      const post = new Mesh(postGeometry, frame);
+      post.name = 'Gallery glass railing post';
+      post.position.set(Math.cos(angle) * radius, 5.04, Math.sin(angle) * radius);
+      gallery.add(post);
+      if (index < segments) {
+        const midAngle = angle + Math.PI / segments / 2;
+        const pane = new Mesh(paneGeometry, glass);
+        pane.name = 'Gallery transparent glass railing';
+        pane.position.set(Math.cos(midAngle) * radius, 5.02, Math.sin(midAngle) * radius);
+        pane.rotation.y = -midAngle - Math.PI / 2;
+        gallery.add(pane);
+      }
+      if (index % 2 === 0) {
+        const supportRadius = 13.15;
+        const support = new Mesh(supportGeometry, frame);
+        support.name = 'Gallery structural column';
+        support.position.set(Math.cos(angle) * supportRadius, 2.2, Math.sin(angle) * supportRadius);
+        support.castShadow = true;
+        gallery.add(support);
+      }
+    }
+    this.group.add(gallery);
+  }
+
+  private createLayeredCeiling(white: Material, frame: Material, light: Material): void {
+    const ceiling = new Group();
+    ceiling.name = 'Layered circular exhibition ceiling';
+    const rings: readonly [number, number, number, Material][] = [
+      [7.2, 0.16, 9.18, frame], [9.25, 0.25, 9.38, white], [11.65, 0.12, 9.52, frame],
+      [6.35, 0.055, 8.98, light], [8.35, 0.06, 9.18, light], [10.45, 0.055, 9.34, light],
+    ];
+    rings.forEach(([radius, tube, y, material], index) => {
+      const ring = new Mesh(this.keepGeometry(new TorusGeometry(radius, tube, 8, 96)), material);
+      ring.name = index < 3 ? 'Layered metallic ceiling ring' : 'Architectural ceiling light ring';
+      ring.rotation.x = Math.PI / 2;
+      ring.position.y = y;
+      ceiling.add(ring);
+    });
+    const hangerGeometry = this.keepGeometry(new CylinderGeometry(0.035, 0.035, 0.7, 8));
+    for (let index = 0; index < 12; index += 1) {
+      const angle = index * Math.PI / 6;
+      const hanger = new Mesh(hangerGeometry, frame);
+      hanger.name = 'Ceiling ring suspension rod';
+      hanger.position.set(Math.cos(angle) * 8.35, 9.52, Math.sin(angle) * 8.35);
+      ceiling.add(hanger);
+    }
+    this.group.add(ceiling);
+  }
+
+  private createDistantEnvironment(): void {
+    const landscape = this.keepMaterial(new MeshStandardMaterial({
+      color: '#a9cfc8', transparent: true, opacity: 0.34, roughness: 0.9, depthWrite: false,
+    }));
+    const skylineGeometry = this.keepGeometry(new BoxGeometry(1, 1, 0.12));
+    const heights = [1.6, 2.4, 1.9, 3.1, 2.2, 1.5, 2.8, 1.8, 2.5, 1.4, 2.9, 2];
+    heights.forEach((height, index) => {
+      const block = new Mesh(skylineGeometry, landscape);
+      block.name = 'Distant campus silhouette';
+      block.scale.set(1.7 + (index % 3) * 0.35, height, 1);
+      block.position.set(-13.6 + index * 2.45, height / 2, -13.5 - (index % 2) * 0.3);
+      this.group.add(block);
+    });
   }
 
   private createEntrance(): void {
     const stepMaterial = this.keepMaterial(new MeshPhysicalMaterial({
       color: '#f5f8f7', roughness: 0.36, clearcoat: 0.32,
     }));
-    for (let index = 0; index < 3; index += 1) {
+    for (let index = 0; index < 5; index += 1) {
       const step = new Mesh(
-        this.keepGeometry(new BoxGeometry(10.5 - index * 0.55, 0.14, 1.15)),
+        this.keepGeometry(new BoxGeometry(12.2 - index * 0.55, 0.13, 1.05)),
         stepMaterial,
       );
       step.name = `Entrance approach step ${index + 1}`;
-      step.position.set(0, -0.28 + index * 0.14, 13.55 - index * 0.86);
+      step.position.set(0, -0.52 + index * 0.13, 14.25 - index * 0.78);
       step.receiveShadow = true;
       this.group.add(step);
     }
@@ -260,6 +359,38 @@ export class Showroom {
       guide.position.set(x, 0.018, 9.35);
       this.group.add(guide);
     }
+
+    const portalMaterial = this.keepMaterial(new MeshPhysicalMaterial({
+      color: '#f7faf9', roughness: 0.3, metalness: 0.06, clearcoat: 0.38,
+    }));
+    const portalLight = this.keepMaterial(new MeshStandardMaterial({
+      color: '#ddffff', emissive: '#61d6cc', emissiveIntensity: 1.45, roughness: 0.2,
+    }));
+    const sideWallGeometry = this.keepGeometry(new BoxGeometry(2.15, 3.35, 4.5));
+    for (const x of [-7.05, 7.05]) {
+      const wall = new Mesh(sideWallGeometry, portalMaterial);
+      wall.name = 'Entrance sculptural side wall';
+      wall.position.set(x, 1.55, 10.35);
+      wall.rotation.y = x < 0 ? -0.09 : 0.09;
+      wall.castShadow = true;
+      wall.receiveShadow = true;
+      this.group.add(wall);
+
+      const edgeLight = new Mesh(this.keepGeometry(new BoxGeometry(0.07, 2.75, 3.85)), portalLight);
+      edgeLight.name = 'Entrance vertical guidance light';
+      edgeLight.position.set(x + (x < 0 ? 1.1 : -1.1), 1.65, 10.25);
+      edgeLight.rotation.y = wall.rotation.y;
+      this.group.add(edgeLight);
+    }
+    const portalBeam = new Mesh(this.keepGeometry(new BoxGeometry(12.2, 0.38, 1.05)), portalMaterial);
+    portalBeam.name = 'Entrance floating portal canopy';
+    portalBeam.position.set(0, 4.65, 10.15);
+    portalBeam.castShadow = true;
+    this.group.add(portalBeam);
+    const portalBeamLight = new Mesh(this.keepGeometry(new BoxGeometry(8.1, 0.055, 0.12)), portalLight);
+    portalBeamLight.name = 'Entrance portal light line';
+    portalBeamLight.position.set(0, 4.43, 10.58);
+    this.group.add(portalBeamLight);
 
     for (const x of [-5.5, 5.5]) {
       const railing = new Group();
