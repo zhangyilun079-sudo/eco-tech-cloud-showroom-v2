@@ -113,8 +113,8 @@ export class ShowroomApplication {
       },
     );
 
-    this.scene.background = new Color('#07120f');
-    this.scene.fog = new Fog('#07120f', 22, 46);
+    this.scene.background = new Color('#dceff2');
+    this.scene.fog = new Fog('#dceff2', 30, 58);
     this.scene.add(
       new LightingRig(),
       this.showroom.group,
