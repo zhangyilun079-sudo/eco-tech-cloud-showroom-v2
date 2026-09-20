@@ -1,5 +1,6 @@
 import {
   AdditiveBlending,
+  BoxGeometry,
   BufferGeometry,
   CanvasTexture,
   Color,
@@ -34,6 +35,7 @@ const METRICS: readonly Metric[] = [
   { label: 'AIR QUALITY', value: '42', unit: 'AQI · GOOD', color: '#64ddd4' },
   { label: 'WATER INDEX', value: '96.4', unit: '% OPTIMAL', color: '#6edfd0' },
   { label: 'ENERGY FLOW', value: '81', unit: '% RENEWABLE', color: '#8cdea8' },
+  { label: 'ECO COVER', value: '73.8', unit: '% MONITORED', color: '#76e69d' },
 ];
 
 /** Lightweight, self-contained visualisation for the showroom's central atrium. */
@@ -44,6 +46,7 @@ export class CentralDataCore extends Group {
   private readonly globe = new Group();
   private readonly orbitRings = new Group();
   private readonly metricPanels = new Group();
+  private readonly terminals = new Group();
   private elapsed = 0;
 
   public constructor() {
@@ -52,6 +55,7 @@ export class CentralDataCore extends Group {
     this.createPlatform();
     this.createGlobe();
     this.createMetricPanels();
+    this.createTerminals();
     this.createIllumination();
   }
 
@@ -59,6 +63,10 @@ export class CentralDataCore extends Group {
     this.elapsed += delta;
     this.globe.rotation.y += delta * 0.075;
     this.orbitRings.rotation.y -= delta * 0.045;
+    this.orbitRings.rotation.z = Math.sin(this.elapsed * 0.18) * 0.08;
+    this.terminals.children.forEach((terminal, index) => {
+      terminal.position.y = 0.62 + Math.sin(this.elapsed * 1.1 + index) * 0.025;
+    });
     this.metricPanels.position.y = Math.sin(this.elapsed * 0.65) * 0.035;
   }
 
@@ -77,12 +85,23 @@ export class CentralDataCore extends Group {
     const edge = this.keepMaterial(new MeshStandardMaterial({
       color: '#64d8cf', emissive: '#35b9b1', emissiveIntensity: 1.6, roughness: 0.3,
     }));
-    const platform = new Mesh(this.keepGeometry(new CylinderGeometry(2.05, 2.22, 0.3, 64)), surface);
-    platform.name = 'Circular data core platform';
-    platform.position.y = 0.15;
-    platform.castShadow = true;
-    platform.receiveShadow = true;
-    this.add(platform);
+    const platformLayers = [
+      { radius: 2.7, height: 0.16, y: 0.08 },
+      { radius: 2.2, height: 0.24, y: 0.26 },
+      { radius: 1.62, height: 0.18, y: 0.46 },
+    ];
+    platformLayers.forEach((layer, index) => {
+      const platform = new Mesh(this.keepGeometry(new CylinderGeometry(layer.radius * 0.96, layer.radius, layer.height, 64)), surface);
+      platform.name = `Layer ${index + 1} of ecological data island`;
+      platform.position.y = layer.y;
+      platform.castShadow = true;
+      platform.receiveShadow = true;
+      this.add(platform);
+      const edgeRing = new Mesh(this.keepGeometry(new TorusGeometry(layer.radius * 0.98, 0.018, 5, 64)), edge);
+      edgeRing.rotation.x = Math.PI / 2;
+      edgeRing.position.y = layer.y + layer.height / 2;
+      this.add(edgeRing);
+    });
 
     const inlay = new Mesh(this.keepGeometry(new RingGeometry(1.48, 1.54, 64)), edge);
     inlay.rotation.x = -Math.PI / 2;
@@ -90,13 +109,21 @@ export class CentralDataCore extends Group {
     this.add(inlay);
 
     const support = new Mesh(this.keepGeometry(new CylinderGeometry(0.54, 0.72, 0.34, 48)), surface);
-    support.position.y = 0.46;
+    support.position.y = 0.68;
     this.add(support);
+
+    const dataShell = new Mesh(this.keepGeometry(new CylinderGeometry(1.34, 1.55, 2.5, 36, 1, true)), this.keepMaterial(new MeshPhysicalMaterial({
+      color: '#57dfd5', emissive: '#1b8d89', emissiveIntensity: 0.16, transparent: true,
+      opacity: 0.075, transmission: 0.78, roughness: 0.08, depthWrite: false, side: DoubleSide,
+    })));
+    dataShell.name = 'Transparent ecological data shell';
+    dataShell.position.y = 1.73;
+    this.add(dataShell);
   }
 
   private createGlobe(): void {
     this.globe.name = 'Environmental monitoring globe';
-    this.globe.position.y = 2.15;
+    this.globe.position.y = 2.05;
 
     const shell = this.keepMaterial(new MeshPhysicalMaterial({
       color: '#75e6dd', emissive: '#1c8f8d', emissiveIntensity: 0.11,
@@ -128,13 +155,19 @@ export class CentralDataCore extends Group {
       color: '#7ce4d7', transparent: true, opacity: 0.32, depthWrite: false,
     }));
     this.orbitRings.name = 'Ecological data orbital rings';
-    this.orbitRings.position.y = 2.15;
-    const ringGeometry = this.keepGeometry(new TorusGeometry(1.3, 0.012, 5, 72));
-    const horizontal = new Mesh(ringGeometry, ringMaterial);
-    horizontal.rotation.x = Math.PI / 2;
-    const diagonal = new Mesh(ringGeometry, ringMaterial);
-    diagonal.rotation.set(Math.PI / 2.8, 0.25, Math.PI / 7);
-    this.orbitRings.add(horizontal, diagonal);
+    this.orbitRings.position.y = 2.05;
+    const orbitalConfigurations = [
+      { radius: 1.3, rotation: [Math.PI / 2, 0, 0] },
+      { radius: 1.48, rotation: [Math.PI / 2.8, 0.25, Math.PI / 7] },
+      { radius: 1.68, rotation: [Math.PI / 2.35, -0.4, -Math.PI / 5] },
+      { radius: 1.9, rotation: [Math.PI / 1.9, 0.2, Math.PI / 3] },
+    ];
+    orbitalConfigurations.forEach((configuration, index) => {
+      const ring = new Mesh(this.keepGeometry(new TorusGeometry(configuration.radius, index === 3 ? 0.008 : 0.012, 5, 72)), ringMaterial);
+      ring.name = `Live data orbital ring ${index + 1}`;
+      ring.rotation.set(...configuration.rotation as [number, number, number]);
+      this.orbitRings.add(ring);
+    });
     this.add(this.orbitRings);
   }
 
@@ -147,13 +180,39 @@ export class CentralDataCore extends Group {
         map: texture, transparent: true, opacity: 0.82, depthWrite: false, side: DoubleSide,
       }));
       const panel = new Mesh(panelGeometry, material);
-      const angle = index * Math.PI * 2 / METRICS.length + Math.PI / 2;
+      const angle = index * Math.PI * 2 / METRICS.length + Math.PI / 4;
       panel.name = `${metric.label} metric panel`;
-      panel.position.set(Math.cos(angle) * 1.78, 2.15 + (index === 1 ? 0.34 : -0.12), Math.sin(angle) * 1.78);
+      panel.position.set(Math.cos(angle) * 1.92, 2.05 + (index % 2 === 1 ? 0.3 : -0.1), Math.sin(angle) * 1.92);
       panel.rotation.y = angle - Math.PI / 2;
       this.metricPanels.add(panel);
     });
     this.add(this.metricPanels);
+  }
+
+  private createTerminals(): void {
+    this.terminals.name = 'Surrounding interactive environmental terminals';
+    const body = this.keepMaterial(new MeshStandardMaterial({ color: '#0a1b1e', metalness: 0.72, roughness: 0.26 }));
+    const screen = this.keepMaterial(new MeshPhysicalMaterial({
+      color: '#65e3d7', emissive: '#3ad0c4', emissiveIntensity: 0.9, transparent: true,
+      opacity: 0.28, transmission: 0.35, roughness: 0.1,
+    }));
+    for (let index = 0; index < 6; index += 1) {
+      const angle = index / 6 * Math.PI * 2;
+      const terminal = new Group();
+      terminal.name = `Interactive monitoring terminal ${index + 1}`;
+      terminal.position.set(Math.cos(angle) * 3.28, 0.62, Math.sin(angle) * 3.28);
+      terminal.rotation.y = -angle + Math.PI / 2;
+      const stem = new Mesh(this.keepGeometry(new BoxGeometry(0.12, 0.78, 0.14)), body);
+      stem.position.y = -0.23;
+      const display = new Mesh(this.keepGeometry(new BoxGeometry(0.74, 0.5, 0.045)), screen);
+      display.rotation.x = -0.28;
+      display.position.y = 0.28;
+      const status = new Mesh(this.keepGeometry(new BoxGeometry(0.48, 0.025, 0.055)), screen);
+      status.position.set(0, 0.25, 0.045);
+      terminal.add(stem, display, status);
+      this.terminals.add(terminal);
+    }
+    this.add(this.terminals);
   }
 
   private createMetricTexture(metric: Metric): CanvasTexture {

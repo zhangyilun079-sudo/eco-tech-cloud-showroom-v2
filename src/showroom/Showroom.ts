@@ -48,14 +48,39 @@ interface ZoneTheme {
   readonly accent: string;
   readonly metric: string;
   readonly motif: 'water' | 'circular' | 'energy' | 'air' | 'ecology';
+  readonly indicators: readonly [ZoneIndicator, ZoneIndicator, ZoneIndicator];
+}
+
+interface ZoneIndicator {
+  readonly label: string;
+  readonly value: string;
+  readonly unit: string;
+  readonly level: number;
+}
+
+interface AnimatedDataDisplay {
+  readonly texture: CanvasTexture;
+  readonly context: CanvasRenderingContext2D;
+  readonly theme: ZoneTheme;
+  readonly phase: number;
 }
 
 const ZONE_THEMES: Readonly<Record<ShowroomZoneId, ZoneTheme>> = {
-  ZONE_01: { title: '水环境治理', englishTitle: 'WATER INTELLIGENCE', descriptor: '智慧水务 / 资源循环', accent: '#35d9e7', metric: 'RECOVERY 92%', motif: 'water' },
-  ZONE_02: { title: '固废资源化', englishTitle: 'RESOURCE CIRCULATION', descriptor: '智能分选 / 循环材料', accent: '#58e59a', metric: 'CYCLE 86%', motif: 'circular' },
-  ZONE_03: { title: '清洁能源', englishTitle: 'CLEAN ENERGY', descriptor: '氢能 / 智慧储能', accent: '#48e1c1', metric: 'CO₂ −68%', motif: 'energy' },
-  ZONE_04: { title: '大气环境治理', englishTitle: 'AIR INTELLIGENCE', descriptor: '感知网络 / 排放控制', accent: '#5dbef3', metric: 'AQI 32', motif: 'air' },
-  ZONE_05: { title: '生态修复', englishTitle: 'ECO RESTORATION', descriptor: '数字孪生 / 智慧监测', accent: '#76e69d', metric: 'ECO INDEX 78', motif: 'ecology' },
+  ZONE_01: { title: '水环境治理', englishTitle: 'WATER INTELLIGENCE', descriptor: '智慧水务 / 资源循环', accent: '#35d9e7', metric: 'RECOVERY 92%', motif: 'water', indicators: [
+    { label: 'WATER QUALITY', value: 'Ⅱ', unit: 'CLASS', level: 0.84 }, { label: 'TREATMENT', value: '97.6', unit: '% EFF.', level: 0.976 }, { label: 'RECYCLING', value: '92', unit: '%', level: 0.92 },
+  ] },
+  ZONE_02: { title: '固废资源化', englishTitle: 'RESOURCE CIRCULATION', descriptor: '智能分选 / 循环材料', accent: '#58e59a', metric: 'CYCLE 86%', motif: 'circular', indicators: [
+    { label: 'CIRCULATION', value: '1.8K', unit: 'T/DAY', level: 0.78 }, { label: 'RECYCLE RATE', value: '86', unit: '%', level: 0.86 }, { label: 'DIVERSION', value: '91', unit: '%', level: 0.91 },
+  ] },
+  ZONE_03: { title: '清洁能源', englishTitle: 'CLEAN ENERGY', descriptor: '氢能 / 智慧储能', accent: '#48e1c1', metric: 'CO₂ −68%', motif: 'energy', indicators: [
+    { label: 'RENEWABLE', value: '81', unit: '% GRID', level: 0.81 }, { label: 'HYDROGEN', value: '12.4', unit: 'T/DAY', level: 0.68 }, { label: 'STORAGE', value: '94', unit: '% SOC', level: 0.94 },
+  ] },
+  ZONE_04: { title: '大气环境治理', englishTitle: 'AIR INTELLIGENCE', descriptor: '感知网络 / 排放控制', accent: '#5dbef3', metric: 'AQI 32', motif: 'air', indicators: [
+    { label: 'AIR QUALITY', value: '32', unit: 'AQI GOOD', level: 0.88 }, { label: 'EMISSIONS', value: '−43', unit: '% YOY', level: 0.74 }, { label: 'SENSORS', value: '128', unit: 'ONLINE', level: 0.96 },
+  ] },
+  ZONE_05: { title: '生态修复', englishTitle: 'ECO RESTORATION', descriptor: '数字孪生 / 智慧监测', accent: '#76e69d', metric: 'ECO INDEX 78', motif: 'ecology', indicators: [
+    { label: 'ECO MONITOR', value: '78', unit: 'INDEX', level: 0.78 }, { label: 'REMOTE SENSE', value: '96', unit: '% COVER', level: 0.96 }, { label: 'HABITAT', value: '+18', unit: '% GAIN', level: 0.69 },
+  ] },
 };
 
 // Keep these anchors stable: HotspotManager and exhibit-mode entry depend on them.
@@ -75,7 +100,9 @@ export class Showroom {
   private readonly materials: Material[] = [];
   private readonly textures: Texture[] = [];
   private readonly holograms: Group[] = [];
+  private readonly dataDisplays: AnimatedDataDisplay[] = [];
   private elapsed = 0;
+  private dataFrame = -1;
 
   public constructor() {
     this.group.name = 'Cylindrical intelligent digital exhibition hall';
@@ -93,6 +120,14 @@ export class Showroom {
       hologram.rotation.y += delta * (0.14 + index * 0.012);
       hologram.position.y = 2.25 + Math.sin(this.elapsed * 0.75 + index) * 0.09;
     });
+    const nextDataFrame = Math.floor(this.elapsed * 10);
+    if (nextDataFrame !== this.dataFrame) {
+      this.dataFrame = nextDataFrame;
+      this.dataDisplays.forEach((display) => {
+        this.drawDataDisplay(display, this.elapsed);
+        display.texture.needsUpdate = true;
+      });
+    }
   }
 
   public dispose(): void {
@@ -205,7 +240,8 @@ export class Showroom {
     }
 
     this.createMainScreen(zone, layout.id, theme, screen, glow);
-    this.createSecondaryScreens(zone, theme, screen, glow);
+    this.createSecondaryScreens(zone, theme, glow);
+    this.createPodArchitecture(zone, theme, structure, glow);
     this.createHologram(zone, theme);
 
     // Attachment point remains intentionally empty in showroom mode. The
@@ -245,19 +281,64 @@ export class Showroom {
     }
   }
 
-  private createSecondaryScreens(zone: Group, theme: ZoneTheme, screen: Material, glow: Material): void {
-    for (const x of [-2.65, 2.65]) {
-      const panel = new Mesh(this.keepGeometry(new PlaneGeometry(1.42, 1.45)), screen);
-      panel.name = 'Integrated live telemetry surface';
-      panel.position.set(x, 2.12, -0.06);
-      zone.add(panel);
-      for (let i = 0; i < 4; i += 1) {
-        const bar = new Mesh(this.keepGeometry(new PlaneGeometry(0.72 + i * 0.1, 0.025)), glow);
-        bar.position.set(x, 1.8 + i * 0.2, -0.025);
-        bar.material = this.keepMaterial(new MeshBasicMaterial({ color: theme.accent, transparent: true, opacity: 0.28 + i * 0.1 }));
-        zone.add(bar);
-      }
+  private createSecondaryScreens(zone: Group, theme: ZoneTheme, glow: Material): void {
+    const display = this.createDataDisplay(theme, this.dataDisplays.length * 0.83);
+    const panel = new Mesh(this.keepGeometry(new PlaneGeometry(6.15, 1.18)), this.keepMaterial(new MeshBasicMaterial({
+      map: display.texture, transparent: true, opacity: 0.96, depthWrite: false,
+    })));
+    panel.name = `${theme.englishTitle} animated environmental indicators`;
+    panel.position.set(0, 4.08, -0.04);
+    zone.add(panel);
+
+    for (const x of [-2.75, 2.75]) {
+      const sideLight = new Mesh(this.keepGeometry(new BoxGeometry(0.018, 1.2, 0.04)), glow);
+      sideLight.position.set(x, 4.08, -0.01);
+      zone.add(sideLight);
     }
+  }
+
+  private createPodArchitecture(zone: Group, theme: ZoneTheme, structure: Material, glow: Material): void {
+    const glass = this.keepMaterial(new MeshPhysicalMaterial({
+      color: theme.accent, emissive: theme.accent, emissiveIntensity: 0.14, transparent: true,
+      opacity: 0.12, transmission: 0.72, roughness: 0.12, metalness: 0.08, depthWrite: false,
+      side: DoubleSide,
+    }));
+    const deck = new Mesh(this.keepGeometry(new CylinderGeometry(2.55, 2.75, 0.2, 48, 1, false, 0, Math.PI)), structure);
+    deck.name = 'Lower-level holographic projection deck';
+    deck.rotation.y = Math.PI / 2;
+    deck.position.set(0, 0.12, 0.65);
+    zone.add(deck);
+
+    const glassShell = new Mesh(this.keepGeometry(new CylinderGeometry(2.35, 2.65, 2.75, 40, 1, true, 0, Math.PI)), glass);
+    glassShell.name = 'Transparent technical model shell';
+    glassShell.rotation.y = Math.PI / 2;
+    glassShell.position.set(0, 1.5, 0.4);
+    zone.add(glassShell);
+
+    for (const radius of [1.65, 2.3]) {
+      const ring = new Mesh(this.keepGeometry(new TorusGeometry(radius, 0.025, 6, 54, Math.PI)), glow);
+      ring.name = 'Pod projection boundary';
+      ring.rotation.set(Math.PI / 2, 0, Math.PI / 2);
+      ring.position.set(0, 0.27, 0.58);
+      zone.add(ring);
+    }
+
+    const consoleGroup = new Group();
+    consoleGroup.name = 'Interactive lower-level data surface';
+    consoleGroup.position.set(0, 0.82, 2.05);
+    consoleGroup.rotation.x = -0.42;
+    const console = new Mesh(this.keepGeometry(new BoxGeometry(2.7, 0.78, 0.07)), glass);
+    const consoleGlow = new Mesh(this.keepGeometry(new PlaneGeometry(2.42, 0.55)), this.keepMaterial(new MeshBasicMaterial({
+      color: theme.accent, transparent: true, opacity: 0.23, blending: AdditiveBlending,
+    })));
+    consoleGlow.position.z = 0.045;
+    consoleGroup.add(console, consoleGlow);
+    for (let i = -3; i <= 3; i += 1) {
+      const key = new Mesh(this.keepGeometry(new BoxGeometry(0.22, 0.025, 0.02)), glow);
+      key.position.set(i * 0.31, -0.12 + Math.abs(i % 2) * 0.17, 0.075);
+      consoleGroup.add(key);
+    }
+    zone.add(consoleGroup);
   }
 
   private createHologram(zone: Group, theme: ZoneTheme): void {
@@ -335,6 +416,56 @@ export class Showroom {
     texture.colorSpace = SRGBColorSpace;
     this.textures.push(texture);
     return texture;
+  }
+
+  private createDataDisplay(theme: ZoneTheme, phase: number): AnimatedDataDisplay {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1024;
+    canvas.height = 196;
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Unable to create environmental data display.');
+    const texture = new CanvasTexture(canvas);
+    texture.colorSpace = SRGBColorSpace;
+    this.textures.push(texture);
+    const display = { texture, context, theme, phase };
+    this.dataDisplays.push(display);
+    this.drawDataDisplay(display, 0);
+    return display;
+  }
+
+  private drawDataDisplay(display: AnimatedDataDisplay, elapsed: number): void {
+    const { context, theme, phase } = display;
+    const pulse = (Math.sin(elapsed * 1.25 + phase) + 1) * 0.5;
+    context.clearRect(0, 0, 1024, 196);
+    context.fillStyle = 'rgba(2, 18, 24, .88)';
+    context.fillRect(0, 0, 1024, 196);
+    context.strokeStyle = `${theme.accent}55`;
+    context.lineWidth = 2;
+    context.strokeRect(2, 2, 1020, 192);
+
+    theme.indicators.forEach((indicator, index) => {
+      const x = 30 + index * 325;
+      context.fillStyle = 'rgba(220, 255, 252, .58)';
+      context.font = '600 18px Arial, sans-serif';
+      context.fillText(indicator.label, x, 38);
+      context.fillStyle = '#efffff';
+      context.font = '500 48px Arial, sans-serif';
+      context.fillText(indicator.value, x, 94);
+      context.fillStyle = theme.accent;
+      context.font = '500 15px Arial, sans-serif';
+      context.fillText(indicator.unit, x + 112, 91);
+
+      context.fillStyle = 'rgba(140, 235, 225, .12)';
+      context.fillRect(x, 126, 252, 8);
+      const liveLevel = Math.min(1, indicator.level * (0.94 + pulse * 0.06));
+      context.fillStyle = theme.accent;
+      context.fillRect(x, 126, 252 * liveLevel, 8);
+      context.fillStyle = `${theme.accent}99`;
+      for (let sample = 0; sample < 18; sample += 1) {
+        const wave = Math.sin(sample * 0.72 + elapsed * 1.8 + phase + index) * 8;
+        context.fillRect(x + sample * 14, 163 + wave, 7, 2);
+      }
+    });
   }
 
   private keepGeometry<T extends BufferGeometry>(geometry: T): T {
