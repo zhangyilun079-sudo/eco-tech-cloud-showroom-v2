@@ -161,13 +161,18 @@ export class ShowroomApplication {
   private readonly animate = (): void => {
     const delta = Math.min(this.clock.getDelta(), 0.1);
     this.camera.update();
-    this.showroom.update(delta);
+    // Only advance mode-specific visuals while they can contribute a frame.
+    // The viewer still updates in every mode so camera enter/exit transitions finish.
+    if (this.viewMode.mode === ViewMode.SHOWROOM) {
+      this.showroom.update(delta);
+      this.hotspots.update(delta);
+    } else {
+      this.exhibits.update(delta);
+      this.componentInteractions.update();
+      if (this.viewMode.mode === ViewMode.PROCESS) this.processController.update(delta);
+    }
     this.exhibitViewer.update(delta);
     this.explosionController.update(delta);
-    this.processController.update(delta);
-    this.componentInteractions.update();
-    this.exhibits.update(delta);
-    this.hotspots.update(delta);
     this.renderer.renderer.render(this.scene, this.camera.camera);
     this.animationFrameId = requestAnimationFrame(this.animate);
   };
