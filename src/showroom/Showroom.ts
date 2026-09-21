@@ -305,19 +305,26 @@ export class Showroom {
       clearcoat: 0.45, clearcoatRoughness: 0.18, toneMapped: true,
     }));
 
-    const back = new Mesh(this.keepGeometry(new BoxGeometry(7.2, 8.2, 0.32)), inset);
-    back.name = 'Double-height digital bay backdrop';
-    back.position.set(0, 4.1, -0.3);
-    zone.add(back);
+    // The display is deliberately confined to the upper half of the bay. An
+    // earlier full-height backing board crossed the rotating hologram volume,
+    // hiding part of every preview whenever it travelled behind that board.
+    // This shallow upper carrier preserves the screen contrast while leaving
+    // the complete lower projection volume physically open.
+    const suspendedBack = new Mesh(this.keepGeometry(new BoxGeometry(7.2, 3.72, 0.22)), inset);
+    suspendedBack.name = 'Suspended upper digital display carrier';
+    suspendedBack.position.set(0, 6.2, -0.3);
+    zone.add(suspendedBack);
     const header = new Mesh(this.keepGeometry(new BoxGeometry(7.35, 0.26, 0.5)), structure);
     header.position.set(0, 8.08, -0.1);
     zone.add(header);
     for (const x of [-3.48, 3.48]) {
-      const column = new Mesh(this.keepGeometry(new BoxGeometry(0.22, 8.25, 0.48)), structure);
-      column.position.set(x, 4.05, -0.08);
-      const trim = new Mesh(this.keepGeometry(new BoxGeometry(0.035, 7.72, 0.51)), glow);
-      trim.position.set(x > 0 ? x - 0.13 : x + 0.13, 4.02, -0.05);
-      zone.add(column, trim);
+      const hanger = new Mesh(this.keepGeometry(new BoxGeometry(0.16, 4.05, 0.4)), structure);
+      hanger.name = 'Suspended display side hanger';
+      hanger.position.set(x, 6.15, -0.08);
+      const trim = new Mesh(this.keepGeometry(new BoxGeometry(0.035, 3.62, 0.43)), glow);
+      trim.name = 'Suspended display vertical light edge';
+      trim.position.set(x > 0 ? x - 0.1 : x + 0.1, 6.12, -0.05);
+      zone.add(hanger, trim);
     }
 
     this.createMainScreen(zone, layout.id, theme, screen, glow);
@@ -344,7 +351,7 @@ export class Showroom {
   private createMainScreen(zone: Group, id: ShowroomZoneId, theme: ZoneTheme, screen: Material, glow: Material): void {
     const display = new Mesh(this.keepGeometry(new PlaneGeometry(6.25, 2.6)), screen);
     display.name = 'Self-illuminated panoramic technology display';
-    display.position.set(0, 6.18, -0.115);
+    display.position.set(0, 6.55, -0.115);
     zone.add(display);
 
     const labelTexture = this.createLabelTexture(id, theme);
@@ -352,10 +359,10 @@ export class Showroom {
       map: labelTexture, transparent: true, depthWrite: false,
     })));
     label.name = 'Glowing digital title signage';
-    label.position.set(0, 6.18, -0.08);
+    label.position.set(0, 6.55, -0.08);
     zone.add(label);
 
-    for (const y of [4.73, 7.62]) {
+    for (const y of [5.36, 7.76]) {
       const trim = new Mesh(this.keepGeometry(new BoxGeometry(6.3, 0.025, 0.05)), glow);
       trim.position.set(0, y, -0.04);
       zone.add(trim);
@@ -368,12 +375,12 @@ export class Showroom {
       map: display.texture, transparent: true, opacity: 0.96, depthWrite: false,
     })));
     panel.name = `${theme.englishTitle} animated environmental indicators`;
-    panel.position.set(0, 4.08, -0.04);
+    panel.position.set(0, 4.76, -0.04);
     zone.add(panel);
 
     for (const x of [-2.75, 2.75]) {
       const sideLight = new Mesh(this.keepGeometry(new BoxGeometry(0.018, 1.2, 0.04)), glow);
-      sideLight.position.set(x, 4.08, -0.01);
+      sideLight.position.set(x, 4.76, -0.01);
       zone.add(sideLight);
     }
   }
