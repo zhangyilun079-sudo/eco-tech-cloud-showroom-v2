@@ -384,20 +384,23 @@ export class Showroom {
       opacity: 0.14, transmission: 0.82, thickness: 0.12, roughness: 0.16, metalness: 0.02, depthWrite: false,
       side: DoubleSide,
     }));
-    const deck = new Mesh(this.keepGeometry(new CylinderGeometry(2.55, 2.75, 0.2, 48, 1, false, 0, Math.PI)), structure);
+    // Keep the presentation footprint rotationally symmetrical. The former
+    // half-cylinder/half-torus construction read as a broken ring from the
+    // main aisle and left rotating previews without a clear safe boundary.
+    const deck = new Mesh(this.keepGeometry(new CylinderGeometry(2.55, 2.75, 0.2, 64)), structure);
     deck.name = 'Lower-level holographic projection deck';
     deck.rotation.y = Math.PI / 2;
     deck.position.set(0, 0.12, 0.65);
     zone.add(deck);
 
-    const glassShell = new Mesh(this.keepGeometry(new CylinderGeometry(2.35, 2.65, 2.75, 40, 1, true, 0, Math.PI)), glass);
+    const glassShell = new Mesh(this.keepGeometry(new CylinderGeometry(2.35, 2.65, 2.75, 64, 1, true)), glass);
     glassShell.name = 'Transparent technical model shell';
     glassShell.rotation.y = Math.PI / 2;
     glassShell.position.set(0, 1.5, 0.4);
     zone.add(glassShell);
 
     for (const radius of [1.65, 2.3]) {
-      const ring = new Mesh(this.keepGeometry(new TorusGeometry(radius, 0.025, 6, 54, Math.PI)), glow);
+      const ring = new Mesh(this.keepGeometry(new TorusGeometry(radius, 0.025, 6, 72)), glow);
       ring.name = 'Pod projection boundary';
       ring.rotation.set(Math.PI / 2, 0, Math.PI / 2);
       ring.position.set(0, 0.27, 0.58);
@@ -434,25 +437,29 @@ export class Showroom {
       color: theme.accent, emissive: theme.accent, emissiveIntensity: 0.3,
       transparent: true, opacity: 0.055, roughness: 0.2, depthWrite: false,
     }));
-    const geometry = this.keepGeometry(theme.motif === 'water'
-      ? new CylinderGeometry(0.85, 1.2, 1.8, 16, 4)
-      : theme.motif === 'circular'
+    // A 1.35 m bounding radius leaves a generous margin inside the 2.35 m
+    // shell at every rotation angle, including the floating animation.
+    if (theme.motif === 'water') {
+      this.createMvrHologram(hologram, material, solid);
+    } else {
+      const geometry = this.keepGeometry(theme.motif === 'circular'
         ? new TorusGeometry(1.05, 0.3, 10, 30)
         : theme.motif === 'energy'
           ? new SphereGeometry(1.08, 16, 10)
           : theme.motif === 'air'
             ? new TorusGeometry(1.0, 0.13, 7, 36)
             : new SphereGeometry(1.02, 12, 8));
-    const form = new Mesh(geometry, solid);
-    const wire = new Mesh(geometry, material);
-    wire.scale.setScalar(1.015);
-    hologram.add(form, wire);
+      const form = new Mesh(geometry, solid);
+      const wire = new Mesh(geometry, material);
+      wire.scale.setScalar(1.015);
+      hologram.add(form, wire);
 
-    const edges = new LineSegments(this.keepGeometry(new EdgesGeometry(geometry, 18)), this.keepMaterial(new LineBasicMaterial({
-      color: theme.accent, transparent: true, opacity: 0.42, blending: AdditiveBlending,
-    })));
-    edges.scale.setScalar(1.03);
-    hologram.add(edges);
+      const edges = new LineSegments(this.keepGeometry(new EdgesGeometry(geometry, 18)), this.keepMaterial(new LineBasicMaterial({
+        color: theme.accent, transparent: true, opacity: 0.42, blending: AdditiveBlending,
+      })));
+      edges.scale.setScalar(1.03);
+      hologram.add(edges);
+    }
     const projector = new Mesh(this.keepGeometry(new CylinderGeometry(0.08, 1.35, 2.8, 28, 1, true)), this.keepMaterial(new MeshBasicMaterial({
       color: theme.accent, transparent: true, opacity: 0.035, depthWrite: false, side: DoubleSide, blending: AdditiveBlending,
     })));
@@ -460,6 +467,53 @@ export class Showroom {
     hologram.add(projector);
     zone.add(hologram);
     this.holograms.push(hologram);
+  }
+
+  /** Lightweight showroom twin of the full MVR exhibit's plant silhouette. */
+  private createMvrHologram(hologram: Group, wire: Material, fill: Material): void {
+    const plant = new Group();
+    plant.name = 'MVR process plant holographic silhouette';
+    plant.scale.setScalar(0.72);
+    plant.position.y = -0.05;
+
+    const add = (geometry: BufferGeometry, position: readonly [number, number, number], material: Material = wire): Mesh => {
+      const mesh = new Mesh(this.keepGeometry(geometry), material);
+      mesh.position.set(...position);
+      plant.add(mesh);
+      return mesh;
+    };
+
+    // Two-level skid frame and platforms establish the characteristic plant
+    // proportions without loading the detailed interactive exhibit model.
+    for (const x of [-1.55, 0, 1.55]) {
+      for (const z of [-0.65, 0.65]) add(new BoxGeometry(0.07, 2.5, 0.07), [x, 0, z]);
+    }
+    for (const y of [-1.15, 0, 1.15]) {
+      for (const z of [-0.65, 0.65]) add(new BoxGeometry(3.2, 0.07, 0.07), [0, y, z]);
+    }
+    for (const y of [-0.05, 1.08]) add(new BoxGeometry(3.12, 0.045, 1.35), [0, y, 0], fill);
+
+    // Evaporator, crystallizer and horizontal heat-exchanger barrels echo the
+    // recognizable equipment grouping of the formal MVR exhibit.
+    add(new CylinderGeometry(0.36, 0.36, 2.15, 14), [0.38, 0.05, -0.05]);
+    add(new CylinderGeometry(0.34, 0.12, 0.42, 14), [0.38, -1.23, -0.05]);
+    add(new CylinderGeometry(0.29, 0.29, 1.45, 14), [1.18, -0.35, 0.12]);
+    for (const y of [-0.72, -0.25]) {
+      const exchanger = add(new CylinderGeometry(0.16, 0.16, 1.08, 12), [-0.85, y, -0.2]);
+      exchanger.rotation.z = Math.PI / 2;
+    }
+
+    // Orthogonal pipe runs remain legible in wireframe and reinforce the
+    // industrial process-network reading at showroom viewing distance.
+    const pipe = (length: number, position: readonly [number, number, number], axis: 'x' | 'y'): void => {
+      const segment = add(new CylinderGeometry(0.035, 0.035, length, 7), position);
+      if (axis === 'x') segment.rotation.z = Math.PI / 2;
+    };
+    pipe(1.9, [-0.55, 0.72, -0.35], 'x');
+    pipe(1.55, [-1.48, 0, -0.35], 'y');
+    pipe(1.05, [0.88, 0.92, 0.25], 'x');
+    pipe(1.25, [1.38, 0.32, 0.25], 'y');
+    hologram.add(plant);
   }
 
   private createLabelTexture(id: ShowroomZoneId, theme: ZoneTheme): CanvasTexture {
