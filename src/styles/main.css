@@ -60,7 +60,9 @@ canvas.is-component-hovered, canvas.is-component-hovered:active { cursor: pointe
 .zone-exhibit-directory > p { margin: 0 0 8px; color: rgba(111, 229, 243, .6); font-size: 8px; letter-spacing: .2em; }
 .zone-exhibit-directory ol { display: grid; gap: 7px; padding: 0; margin: 0; list-style: none; }
 .zone-exhibit-directory li { display: flex; align-items: center; gap: 13px; min-height: 42px; padding: 9px 13px; border: 1px solid rgba(77, 218, 237, .18); border-radius: 6px; background: linear-gradient(90deg, rgba(4, 38, 48, .72), rgba(4, 31, 39, .3)); backdrop-filter: blur(12px); }
-.zone-exhibit-directory li.is-connected { border-color: rgba(121, 238, 250, .44); box-shadow: inset 2px 0 #73effa, 0 0 24px rgba(44, 191, 216, .07); }
+.zone-exhibit-directory li.is-connected { pointer-events: auto; border-color: rgba(121, 238, 250, .44); box-shadow: inset 2px 0 #73effa, 0 0 24px rgba(44, 191, 216, .07); cursor: pointer; }
+.zone-exhibit-directory li.is-connected:hover,
+.zone-exhibit-directory li.is-connected:focus-visible { border-color: #79eefa; background: linear-gradient(90deg, rgba(12, 75, 88, .82), rgba(4, 40, 49, .46)); outline: none; }
 .zone-exhibit-directory li > span { color: #5ce3f2; font: 500 9px Manrope, sans-serif; }
 .zone-exhibit-directory strong, .zone-exhibit-directory small { display: block; }
 .zone-exhibit-directory strong { color: rgba(236, 252, 254, .9); font-size: 10px; font-weight: 500; line-height: 1.45; }
@@ -70,6 +72,7 @@ canvas.is-component-hovered, canvas.is-component-hovered:active { cursor: pointe
 .zone-live-status { display: flex; gap: 8px; margin-top: 20px; color: rgba(188, 245, 255, .58); font-size: 9px; letter-spacing: .12em; }
 .zone-live-status span { padding: 6px 9px; border: 1px solid rgba(100, 231, 248, .2); border-radius: 3px; background: rgba(10, 62, 78, .28); }
 .zone-live-status span::before { content: ''; display: inline-block; width: 4px; height: 4px; margin-right: 6px; border-radius: 50%; background: #66ecfa; box-shadow: 0 0 7px #66ecfa; }
+canvas.is-zone-exhibit-hovered { cursor: pointer; }
 
 .info-panel.is-exhibit-mode .controls-hint { opacity: 1; visibility: visible; transition: opacity .3s, visibility .3s; }
 .exhibit-panel { position: absolute; left: 52px; top: 50%; width: 360px; padding: 28px 28px 27px; border: 1px solid rgba(139, 238, 190, .2); border-left: 2px solid rgba(139, 238, 190, .65); border-radius: 2px 14px 14px 2px; background: linear-gradient(145deg, rgba(8, 27, 22, .91), rgba(6, 20, 17, .78)); box-shadow: 0 24px 70px rgba(0, 0, 0, .3); backdrop-filter: blur(18px); opacity: 0; visibility: hidden; transform: translate(-14px, -50%); transition: opacity .35s, transform .35s, visibility .35s; }

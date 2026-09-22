@@ -86,6 +86,7 @@ export class ShowroomApplication {
     this.zoneViewer = new ZoneViewer(
       container,
       this.camera,
+      this.renderer.renderer.domElement,
       this.viewMode,
       (active) => {
         this.showroom.group.visible = !active;
@@ -93,6 +94,10 @@ export class ShowroomApplication {
         this.infoPanel.setViewMode(active ? ViewMode.ZONE : ViewMode.SHOWROOM);
       },
       () => this.hotspots.setEnabled(true),
+      (viewerId, position) => {
+        const exhibit = this.exhibits.get(viewerId);
+        if (exhibit) this.exhibitViewer.enter(exhibit, position);
+      },
     );
     this.resourceManager.registerCleanup('explosion', () => this.explosionController.cleanupAnimation());
     this.resourceManager.registerCleanup('process', () => this.processController.cleanupVisualization());

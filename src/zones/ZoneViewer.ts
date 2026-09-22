@@ -5,8 +5,10 @@ import {
   PointsMaterial, RingGeometry, SRGBColorSpace, TorusGeometry, Vector3,
 } from 'three';
 import type { CameraController, CameraState } from '../core/CameraController';
+import { RaycastManager } from '../interaction/RaycastManager';
 import { ViewMode, type ViewModeState } from '../core/ViewMode';
 import type { ZoneDefinition } from './ZoneDefinition';
+import type { ExhibitEntry } from './data/zoneExhibits';
 
 const ENTRY_DURATION = 0.78;
 const SETTLE_DURATION = 0.62;
@@ -27,6 +29,8 @@ export class ZoneViewer {
   private readonly subtitle: HTMLElement;
   private readonly description: HTMLElement;
   private readonly returnButton: HTMLButtonElement;
+  private readonly raycastManager: RaycastManager;
+  private readonly exhibitTargets: Mesh[] = [];
   private transition: Transition | null = null;
   private showroomState: CameraState | null = null;
   private elapsed = 0;
@@ -34,9 +38,11 @@ export class ZoneViewer {
   public constructor(
     container: HTMLElement,
     private readonly camera: CameraController,
+    private readonly canvas: HTMLCanvasElement,
     private readonly viewMode: ViewModeState,
     private readonly onVisibilityChange: (zoneActive: boolean) => void,
     private readonly onReturn: () => void,
+    private readonly onOpenExhibit: (viewerId: string, position: Vector3) => void,
   ) {
     this.group.name = 'ZONE_01 water intelligence center';
     this.group.visible = false;
@@ -53,6 +59,18 @@ export class ZoneViewer {
     this.returnButton = button;
     this.returnButton.addEventListener('click', this.exit);
     this.waterParticles = this.createWaterEnvironment();
+    this.raycastManager = new RaycastManager({
+      camera: this.camera.camera,
+      canvas: this.canvas,
+      getTargets: () => this.viewMode.mode === ViewMode.ZONE ? this.exhibitTargets : [],
+      onHover: (target) => {
+        this.canvas.classList.toggle('is-zone-exhibit-hovered', target !== null);
+      },
+      onClick: (target) => {
+        const exhibit = target.userData.exhibit as ExhibitEntry | undefined;
+        if (exhibit) this.handleExhibitClick(exhibit);
+      },
+    });
   }
 
   public enter(definition: ZoneDefinition, hotspotPosition: Vector3): boolean {
@@ -126,6 +144,8 @@ export class ZoneViewer {
 
   public dispose(): void {
     this.returnButton.removeEventListener('click', this.exit);
+    this.raycastManager.dispose();
+    this.canvas.classList.remove('is-zone-exhibit-hovered');
     this.panel.remove();
     this.geometries.forEach((item) => item.dispose());
     this.materials.forEach((item) => item.dispose());
@@ -212,6 +232,17 @@ export class ZoneViewer {
       const item = document.createElement('li');
       item.className = exhibit.status === 'available' ? 'is-connected' : 'is-placeholder';
       item.innerHTML = `<span>${String(index + 1).padStart(2, '0')}</span><div><strong>${exhibit.name}</strong><small>${exhibit.status === 'available' ? 'CONNECTED · 已接入现有 MVR 展项' : 'PLANNED · 展项预留'}</small></div>`;
+      if (exhibit.status === 'available' && exhibit.viewerId) {
+        item.tabIndex = 0;
+        item.setAttribute('role', 'button');
+        item.addEventListener('click', () => this.handleExhibitClick(exhibit));
+        item.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            this.handleExhibitClick(exhibit);
+          }
+        });
+      }
       return item;
     }));
   }
@@ -220,6 +251,7 @@ export class ZoneViewer {
   private renderExhibitDirectory(definition: ZoneDefinition): void {
     this.exhibitDirectory.clear();
     this.exhibitPreviews.length = 0;
+    this.exhibitTargets.length = 0;
     definition.exhibits.forEach((exhibit, index) => {
       const marker = new Group(); marker.name = `Digital exhibit entrance ${index + 1}`;
       marker.position.set(...exhibit.previewPosition);
@@ -236,8 +268,34 @@ export class ZoneViewer {
         exhibit.status === 'available' ? 'CONNECTED' : 'PLANNED',
         index,
       ));
+      if (exhibit.status === 'available' && exhibit.viewerId) {
+        for (const target of [pad, beam, core, orbit]) {
+          target.userData.exhibit = exhibit;
+          this.exhibitTargets.push(target);
+        }
+      }
       this.exhibitDirectory.add(marker);
     });
+  }
+
+  private handleExhibitClick(exhibit: ExhibitEntry): void {
+    if (this.viewMode.mode !== ViewMode.ZONE || exhibit.status !== 'available' || !exhibit.viewerId) return;
+    console.info('clicked exhibit:', exhibit.id, exhibit.viewerId);
+
+    // ExhibitViewer accepts entries from SHOWROOM mode. Restore that owning state
+    // before routing to the already registered viewer; exiting the exhibit will
+    // therefore return to the main showroom rather than an invisible zone.
+    if (this.showroomState) this.camera.applyState(this.showroomState);
+    this.transition = null;
+    this.showroomState = null;
+    this.group.visible = false;
+    this.panel.classList.remove('is-visible');
+    this.panel.setAttribute('aria-hidden', 'true');
+    this.canvas.classList.remove('is-zone-exhibit-hovered');
+    this.viewMode.set(ViewMode.SHOWROOM);
+    this.camera.setNavigationEnabled(true);
+    this.onVisibilityChange(false);
+    this.onOpenExhibit(exhibit.viewerId, new Vector3(...exhibit.previewPosition));
   }
 
   private createExhibitLabel(title: string, status: string, index: number): Mesh {
