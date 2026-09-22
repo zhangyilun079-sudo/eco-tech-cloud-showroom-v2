@@ -88,6 +88,7 @@ export class ShowroomApplication {
       this.camera,
       this.viewMode,
       (active) => {
+        this.showroom.group.visible = !active;
         this.hotspots?.setEnabled(!active);
         this.infoPanel.setViewMode(active ? ViewMode.ZONE : ViewMode.SHOWROOM);
       },
