@@ -1,7 +1,7 @@
 import {
   AdditiveBlending, BoxGeometry, BufferGeometry, CanvasTexture, Color, CylinderGeometry,
   DoubleSide, Float32BufferAttribute, Group, Material, Mesh, MeshBasicMaterial,
-  MeshPhysicalMaterial, MeshStandardMaterial, PlaneGeometry, PointLight, Points,
+  MeshPhysicalMaterial, MeshStandardMaterial, OctahedronGeometry, PlaneGeometry, PointLight, Points,
   PointsMaterial, RingGeometry, SRGBColorSpace, TorusGeometry, Vector3,
 } from 'three';
 import type { CameraController, CameraState } from '../core/CameraController';
@@ -19,6 +19,7 @@ export class ZoneViewer {
   private readonly materials: Material[] = [];
   private readonly textures: CanvasTexture[] = [];
   private readonly circulationRings: Group[] = [];
+  private readonly exhibitPreviews: Group[] = [];
   private readonly waterParticles: Points;
   private readonly panel: HTMLElement;
   private readonly title: HTMLElement;
@@ -41,7 +42,7 @@ export class ZoneViewer {
     this.panel = document.createElement('section');
     this.panel.className = 'zone-viewer-panel';
     this.panel.setAttribute('aria-hidden', 'true');
-    this.panel.innerHTML = `<p class="zone-viewer-kicker">ZONE_01 · WATER INTELLIGENCE CENTER</p><h1></h1><p class="zone-viewer-subtitle"></p><p class="zone-viewer-description"></p><div class="zone-live-status"><span>水质监测在线</span><span>循环系统稳定</span></div><div class="zone-exhibit-anchor"><span>01</span><div><strong>展品接入点</strong><small>MVR 水处理系统 · attachment ready</small></div></div><button type="button">← 返回主展厅</button>`;
+    this.panel.innerHTML = `<p class="zone-viewer-kicker">ZONE_01 · WATER INTELLIGENCE CENTER</p><h1></h1><p class="zone-viewer-subtitle"></p><p class="zone-viewer-description"></p><div class="zone-live-status"><span>水质监测在线</span><span>循环系统稳定</span></div><section class="zone-exhibit-directory" aria-label="水环境技术展品目录"><p>EXHIBIT DIRECTORY · 展品目录</p><ol></ol></section><button class="zone-return" type="button">← 返回主展厅</button>`;
     container.append(this.panel);
     this.title = this.required('h1');
     this.subtitle = this.required('.zone-viewer-subtitle');
@@ -53,7 +54,7 @@ export class ZoneViewer {
     this.waterParticles = this.createWaterEnvironment();
   }
 
-  public enter(definition: ZoneDefinition): boolean {
+  public enter(definition: ZoneDefinition, hotspotPosition: Vector3): boolean {
     if (definition.id !== 'ZONE_01' || this.viewMode.mode !== ViewMode.SHOWROOM) return false;
     this.showroomState = this.camera.captureState();
     this.viewMode.set(ViewMode.ZONE);
@@ -63,14 +64,17 @@ export class ZoneViewer {
     this.title.textContent = definition.title;
     this.subtitle.textContent = definition.englishTitle;
     this.description.textContent = definition.description;
+    this.renderDirectory(definition);
     this.panel.classList.add('is-visible');
     this.panel.setAttribute('aria-hidden', 'false');
 
     const target = new Vector3(...definition.cameraTarget);
-    const viewingState = { position: new Vector3(...definition.cameraPosition), target };
+    const threshold = hotspotPosition.clone().add(new Vector3(...definition.entryPosition));
+    const direction = new Vector3(...definition.entryDirection).normalize();
+    const viewingState = { position: threshold.clone().addScaledVector(direction, 3), target };
     // Cross the architectural threshold first, then make a short lateral settle
     // into the authored viewing composition instead of flying at the rear wall.
-    this.begin({ position: new Vector3(...definition.entryPosition), target }, ENTRY_DURATION, () => {
+    this.begin({ position: threshold, target: threshold.clone().add(direction) }, ENTRY_DURATION, () => {
       this.begin(viewingState, SETTLE_DURATION);
     });
     return true;
@@ -96,6 +100,10 @@ export class ZoneViewer {
       this.circulationRings.forEach((ring, index) => {
         ring.rotation.z += delta * (index % 2 === 0 ? 0.16 : -0.11);
         ring.position.y = 3.1 + Math.sin(this.elapsed * 0.7 + index) * 0.12;
+      });
+      this.exhibitPreviews.forEach((preview, index) => {
+        preview.rotation.y += delta * (0.24 + index * 0.04);
+        preview.position.y = 2.35 + Math.sin(this.elapsed * 1.1 + index * 0.8) * 0.12;
       });
       this.waterParticles.rotation.y += delta * 0.055;
       this.waterParticles.position.y = Math.sin(this.elapsed * 0.55) * 0.08;
@@ -152,7 +160,7 @@ export class ZoneViewer {
 
     this.createMonitoringWall(new Vector3(8.8, 4.3, -48.5), -0.2);
     this.createMonitoringWall(new Vector3(-8.8, 4.3, -48.5), 0.2);
-    const anchor = new Group(); anchor.name = 'ZONE_01 MVR exhibit attachment anchor'; anchor.position.copy(origin); this.group.add(anchor);
+    this.createExhibitDirectory();
 
     const positions: number[] = [];
     for (let i = 0; i < 620; i += 1) {
@@ -187,5 +195,53 @@ export class ZoneViewer {
     display.position.copy(position); display.rotation.y = rotationY; this.group.add(display);
     const base = new Mesh(this.geometry(new CylinderGeometry(0.9, 1.25, 0.22, 32)), this.material(new MeshPhysicalMaterial({ color: '#1bb3cf', transparent: true, opacity: 0.42, transmission: 0.35 })));
     base.position.set(position.x, 0.12, position.z + 1); this.group.add(base);
+  }
+
+  private renderDirectory(definition: ZoneDefinition): void {
+    const list = this.panel.querySelector<HTMLOListElement>('.zone-exhibit-directory ol');
+    if (!list) return;
+    list.replaceChildren(...definition.exhibitAnchors.map((anchor, index) => {
+      const item = document.createElement('li');
+      item.className = anchor.status === 'connected' ? 'is-connected' : 'is-placeholder';
+      item.innerHTML = `<span>${String(index + 1).padStart(2, '0')}</span><div><strong>${anchor.label}</strong><small>${anchor.status === 'connected' ? 'CONNECTED · 已接入现有 MVR 展项' : 'PLANNED · 展项预留'}</small></div>`;
+      return item;
+    }));
+  }
+
+  /** Three lightweight projections form a directory, never physical equipment. */
+  private createExhibitDirectory(): void {
+    const entries = [
+      { x: -7.2, title: '高盐有机废水 MVR', status: 'CONNECTED' },
+      { x: 0, title: '膜分离处理技术', status: 'PLANNED' },
+      { x: 7.2, title: '智慧水务监测技术', status: 'PLANNED' },
+    ];
+    entries.forEach((entry, index) => {
+      const marker = new Group(); marker.name = `Digital exhibit entrance ${index + 1}`;
+      marker.position.set(entry.x, 0, -42);
+      const pad = new Mesh(this.geometry(new RingGeometry(1.35, 1.47, 64)), this.material(new MeshBasicMaterial({ color: index === 0 ? '#b8fbff' : '#43cfe5', transparent: true, opacity: index === 0 ? 0.85 : 0.42, side: DoubleSide })));
+      pad.rotation.x = -Math.PI / 2; pad.position.y = 0.055;
+      const beam = new Mesh(this.geometry(new CylinderGeometry(0.82, 1.15, 3.6, 32, 1, true)), this.material(new MeshBasicMaterial({ color: '#4de4f4', transparent: true, opacity: 0.055, side: DoubleSide, depthWrite: false })));
+      beam.position.y = 1.8;
+      const preview = new Group(); preview.position.y = 2.35;
+      const core = new Mesh(this.geometry(new OctahedronGeometry(index === 0 ? 0.72 : 0.58, 1)), this.material(new MeshBasicMaterial({ color: index === 0 ? '#d3fdff' : '#61d9e9', wireframe: true, transparent: true, opacity: index === 0 ? 0.9 : 0.5 })));
+      const orbit = new Mesh(this.geometry(new TorusGeometry(1.02, 0.025, 6, 56)), this.material(new MeshBasicMaterial({ color: '#83eff9', transparent: true, opacity: 0.62 })));
+      orbit.rotation.x = Math.PI / 2; preview.add(core, orbit); this.exhibitPreviews.push(preview);
+      marker.add(pad, beam, preview, this.createExhibitLabel(entry.title, entry.status, index));
+      this.group.add(marker);
+    });
+  }
+
+  private createExhibitLabel(title: string, status: string, index: number): Mesh {
+    const canvas = document.createElement('canvas'); canvas.width = 720; canvas.height = 180;
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Exhibit label canvas is unavailable.');
+    context.fillStyle = 'rgba(3,31,43,.82)'; context.fillRect(0, 0, 720, 180);
+    context.strokeStyle = index === 0 ? 'rgba(150,249,255,.85)' : 'rgba(83,210,229,.48)'; context.lineWidth = 3; context.strokeRect(3, 3, 714, 174);
+    context.fillStyle = '#8beefa'; context.font = '500 22px sans-serif'; context.fillText(`0${index + 1}  ${status}`, 30, 43);
+    context.fillStyle = index === 0 ? '#effeff' : '#9bdae2'; context.font = '500 29px sans-serif'; context.fillText(title, 30, 102);
+    context.fillStyle = '#54bdcc'; context.font = '18px sans-serif'; context.fillText(index === 0 ? 'DIGITAL ENTRANCE · ONLINE' : 'HOLOGRAPHIC PREVIEW · RESERVED', 30, 145);
+    const texture = new CanvasTexture(canvas); texture.colorSpace = SRGBColorSpace; this.textures.push(texture);
+    const label = new Mesh(this.geometry(new PlaneGeometry(5.4, 1.35)), this.material(new MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false })));
+    label.position.set(0, 1.1, 1.5); return label;
   }
 }
