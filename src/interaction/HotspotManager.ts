@@ -10,11 +10,11 @@ interface ZoneContent {
 }
 
 const ZONE_CONTENT: Record<string, ZoneContent> = {
-  ZONE_01: { title: '工业废水治理技术区', description: '展示方向:\n- 污染控制\n- 资源化利用\n- 智慧处理技术' },
-  ZONE_02: { title: '智慧大气监测技术区', description: '展示方向:\n- 精准监测\n- 排放分析\n- 空气质量预警' },
-  ZONE_03: { title: '固废资源化技术区', description: '展示方向:\n- 智能分选\n- 循环材料\n- 无害化处置' },
-  ZONE_04: { title: '清洁能源技术区', description: '展示方向:\n- 可再生能源\n- 智慧储能\n- 低碳管理' },
-  ZONE_05: { title: '生态修复技术区', description: '展示方向:\n- 土壤修复\n- 水生态重建\n- 生物多样性保护' },
+  ZONE_01: { title: '水环境治理', description: '展示方向:\n- 污染控制\n- 资源化利用\n- 智慧处理技术' },
+  ZONE_02: { title: '固废资源化利用', description: '展示方向:\n- 智能分选\n- 循环材料\n- 无害化处置' },
+  ZONE_03: { title: '清洁能源', description: '展示方向:\n- 可再生能源\n- 智慧储能\n- 低碳管理' },
+  ZONE_04: { title: '大气环境治理', description: '展示方向:\n- 精准监测\n- 排放分析\n- 空气质量预警' },
+  ZONE_05: { title: '生态修复与智慧监测', description: '展示方向:\n- 土壤修复\n- 水生态重建\n- 生物多样性保护' },
 };
 
 export class HotspotManager {

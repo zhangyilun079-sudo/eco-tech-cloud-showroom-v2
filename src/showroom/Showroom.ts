@@ -72,7 +72,7 @@ const ZONE_THEMES: Readonly<Record<ShowroomZoneId, ZoneTheme>> = {
   ZONE_01: { title: '水环境治理', englishTitle: 'WATER INTELLIGENCE', descriptor: '智慧水务 / 资源循环', accent: '#35d9e7', metric: 'RECOVERY 92%', motif: 'water', indicators: [
     { label: 'WATER QUALITY', value: 'Ⅱ', unit: 'CLASS', level: 0.84 }, { label: 'TREATMENT', value: '97.6', unit: '% EFF.', level: 0.976 }, { label: 'RECYCLING', value: '92', unit: '%', level: 0.92 },
   ] },
-  ZONE_02: { title: '固废资源化', englishTitle: 'RESOURCE CIRCULATION', descriptor: '智能分选 / 循环材料', accent: '#58e59a', metric: 'CYCLE 86%', motif: 'circular', indicators: [
+  ZONE_02: { title: '固废资源化利用', englishTitle: 'RESOURCE CIRCULATION', descriptor: '智能分选 / 循环材料', accent: '#58e59a', metric: 'CYCLE 86%', motif: 'circular', indicators: [
     { label: 'CIRCULATION', value: '1.8K', unit: 'T/DAY', level: 0.78 }, { label: 'RECYCLE RATE', value: '86', unit: '%', level: 0.86 }, { label: 'DIVERSION', value: '91', unit: '%', level: 0.91 },
   ] },
   ZONE_03: { title: '清洁能源', englishTitle: 'CLEAN ENERGY', descriptor: '氢能 / 智慧储能', accent: '#48e1c1', metric: 'CO₂ −68%', motif: 'energy', indicators: [
@@ -81,7 +81,7 @@ const ZONE_THEMES: Readonly<Record<ShowroomZoneId, ZoneTheme>> = {
   ZONE_04: { title: '大气环境治理', englishTitle: 'AIR INTELLIGENCE', descriptor: '感知网络 / 排放控制', accent: '#5dbef3', metric: 'AQI 32', motif: 'air', indicators: [
     { label: 'AIR QUALITY', value: '32', unit: 'AQI GOOD', level: 0.88 }, { label: 'EMISSIONS', value: '−43', unit: '% YOY', level: 0.74 }, { label: 'SENSORS', value: '128', unit: 'ONLINE', level: 0.96 },
   ] },
-  ZONE_05: { title: '生态修复', englishTitle: 'ECO RESTORATION', descriptor: '数字孪生 / 智慧监测', accent: '#76e69d', metric: 'ECO INDEX 78', motif: 'ecology', indicators: [
+  ZONE_05: { title: '生态修复与智慧监测', englishTitle: 'ECO RESTORATION', descriptor: '数字孪生 / 智慧监测', accent: '#76e69d', metric: 'ECO INDEX 78', motif: 'ecology', indicators: [
     { label: 'ECO MONITOR', value: '78', unit: 'INDEX', level: 0.78 }, { label: 'REMOTE SENSE', value: '96', unit: '% COVER', level: 0.96 }, { label: 'HABITAT', value: '+18', unit: '% GAIN', level: 0.69 },
   ] },
 };
