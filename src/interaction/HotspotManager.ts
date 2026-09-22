@@ -33,7 +33,7 @@ export class HotspotManager {
     camera: PerspectiveCamera,
     canvas: HTMLCanvasElement,
     infoPanel: InfoPanel,
-    onSelect: (zone: ShowroomZone) => boolean,
+    onSelect: (zone: ShowroomZone, hotspotPosition: Vector3) => boolean,
   ) {
     this.canvas = canvas;
     this.infoPanel = infoPanel;
@@ -47,7 +47,8 @@ export class HotspotManager {
         title: content.title,
         description: content.description,
         onClick: (selected) => {
-          if (!onSelect(zone)) infoPanel.showZoneDetails(selected.id, selected.title, selected.description);
+          const worldPosition = selected.object.getWorldPosition(new Vector3());
+          if (!onSelect(zone, worldPosition)) infoPanel.showZoneDetails(selected.id, selected.title, selected.description);
         },
       });
       this.group.add(hotspot.object);

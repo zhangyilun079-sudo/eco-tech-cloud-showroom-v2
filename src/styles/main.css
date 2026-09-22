@@ -56,13 +56,17 @@ canvas.is-component-hovered, canvas.is-component-hovered:active { cursor: pointe
 .zone-viewer-panel h1 { margin: 0; font: 400 clamp(34px, 5vw, 64px)/1.12 Manrope, sans-serif; letter-spacing: -.04em; }
 .zone-viewer-subtitle { margin: 10px 0 22px; color: rgba(120, 232, 245, .66); font: 500 11px 'DM Sans', sans-serif; letter-spacing: .24em; }
 .zone-viewer-description { max-width: 390px; color: rgba(221, 244, 247, .65); font-size: 13px; line-height: 1.8; }
-.zone-exhibit-anchor { display: flex; align-items: center; gap: 14px; width: max-content; margin-top: 36px; padding: 13px 18px; border: 1px solid rgba(77, 218, 237, .25); border-radius: 8px; background: rgba(4, 31, 39, .52); backdrop-filter: blur(12px); }
-.zone-exhibit-anchor > span { color: #5ce3f2; font: 500 10px Manrope, sans-serif; }
-.zone-exhibit-anchor strong, .zone-exhibit-anchor small { display: block; }
-.zone-exhibit-anchor strong { font-size: 11px; font-weight: 500; }
-.zone-exhibit-anchor small { margin-top: 4px; color: rgba(205, 239, 243, .45); font-size: 9px; }
-.zone-viewer-panel button { position: absolute; left: 7vw; bottom: 8vh; padding: 11px 17px; pointer-events: auto; border: 1px solid rgba(101, 227, 241, .35); border-radius: 99px; color: #dffaff; background: rgba(3, 25, 32, .75); cursor: pointer; }
-.zone-viewer-panel button:hover { border-color: #65e3f1; background: rgba(12, 61, 70, .8); }
+.zone-exhibit-directory { width: min(430px, 38vw); margin-top: 30px; }
+.zone-exhibit-directory > p { margin: 0 0 8px; color: rgba(111, 229, 243, .6); font-size: 8px; letter-spacing: .2em; }
+.zone-exhibit-directory ol { display: grid; gap: 7px; padding: 0; margin: 0; list-style: none; }
+.zone-exhibit-directory li { display: flex; align-items: center; gap: 13px; min-height: 42px; padding: 9px 13px; border: 1px solid rgba(77, 218, 237, .18); border-radius: 6px; background: linear-gradient(90deg, rgba(4, 38, 48, .72), rgba(4, 31, 39, .3)); backdrop-filter: blur(12px); }
+.zone-exhibit-directory li.is-connected { border-color: rgba(121, 238, 250, .44); box-shadow: inset 2px 0 #73effa, 0 0 24px rgba(44, 191, 216, .07); }
+.zone-exhibit-directory li > span { color: #5ce3f2; font: 500 9px Manrope, sans-serif; }
+.zone-exhibit-directory strong, .zone-exhibit-directory small { display: block; }
+.zone-exhibit-directory strong { color: rgba(236, 252, 254, .9); font-size: 10px; font-weight: 500; line-height: 1.45; }
+.zone-exhibit-directory small { margin-top: 2px; color: rgba(112, 220, 233, .5); font-size: 7px; letter-spacing: .07em; }
+.zone-viewer-panel .zone-return { position: absolute; left: 7vw; bottom: 8vh; padding: 11px 17px; pointer-events: auto; border: 1px solid rgba(101, 227, 241, .35); border-radius: 99px; color: #dffaff; background: rgba(3, 25, 32, .75); cursor: pointer; }
+.zone-viewer-panel .zone-return:hover { border-color: #65e3f1; background: rgba(12, 61, 70, .8); }
 .zone-live-status { display: flex; gap: 8px; margin-top: 20px; color: rgba(188, 245, 255, .58); font-size: 9px; letter-spacing: .12em; }
 .zone-live-status span { padding: 6px 9px; border: 1px solid rgba(100, 231, 248, .2); border-radius: 3px; background: rgba(10, 62, 78, .28); }
 .zone-live-status span::before { content: ''; display: inline-block; width: 4px; height: 4px; margin-right: 6px; border-radius: 50%; background: #66ecfa; box-shadow: 0 0 7px #66ecfa; }
@@ -172,6 +176,9 @@ canvas.is-component-hovered, canvas.is-component-hovered:active { cursor: pointe
   .hotspot-label small { display: none; }
   .zone-panel { right: 24px; top: auto; bottom: 88px; transform: translateY(15px); }
   .zone-panel.is-visible { transform: translateY(0); }
+  .zone-viewer-panel { padding: 9vh 24px; }
+  .zone-exhibit-directory { width: min(100%, 410px); }
+  .zone-viewer-panel .zone-return { left: 24px; bottom: 24px; }
   .exhibit-panel { left: 24px; top: auto; bottom: 70px; width: calc(100vw - 48px); transform: translateY(14px); background: rgba(5, 19, 15, .72); backdrop-filter: blur(12px); }
   .exhibit-panel.is-visible { transform: translateY(0); }
   .component-panel { right: 24px; top: 90px; width: calc(100vw - 48px); transform: translateY(-12px); }

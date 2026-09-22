@@ -117,9 +117,9 @@ export class ShowroomApplication {
       this.camera.camera,
       this.renderer.renderer.domElement,
       this.infoPanel,
-      (zone) => {
+      (zone, hotspotPosition) => {
         const definition = this.zoneManager.get(zone.id);
-        return definition ? this.zoneViewer.enter(definition) : false;
+        return definition ? this.zoneViewer.enter(definition, hotspotPosition) : false;
       },
     );
 
