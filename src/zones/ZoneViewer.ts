@@ -20,6 +20,7 @@ export class ZoneViewer {
   private readonly textures: CanvasTexture[] = [];
   private readonly circulationRings: Group[] = [];
   private readonly exhibitPreviews: Group[] = [];
+  private readonly exhibitDirectory = new Group();
   private readonly waterParticles: Points;
   private readonly panel: HTMLElement;
   private readonly title: HTMLElement;
@@ -64,7 +65,14 @@ export class ZoneViewer {
     this.title.textContent = definition.title;
     this.subtitle.textContent = definition.englishTitle;
     this.description.textContent = definition.description;
+    console.info('[ZoneViewer] zone exhibit data', {
+      zoneId: definition.id,
+      zoneName: definition.title,
+      exhibitCount: definition.exhibits.length,
+      exhibits: definition.exhibits,
+    });
     this.renderDirectory(definition);
+    this.renderExhibitDirectory(definition);
     this.panel.classList.add('is-visible');
     this.panel.setAttribute('aria-hidden', 'false');
 
@@ -160,7 +168,7 @@ export class ZoneViewer {
 
     this.createMonitoringWall(new Vector3(8.8, 4.3, -48.5), -0.2);
     this.createMonitoringWall(new Vector3(-8.8, 4.3, -48.5), 0.2);
-    this.createExhibitDirectory();
+    this.group.add(this.exhibitDirectory);
 
     const positions: number[] = [];
     for (let i = 0; i < 620; i += 1) {
@@ -208,16 +216,13 @@ export class ZoneViewer {
     }));
   }
 
-  /** Three lightweight projections form a directory, never physical equipment. */
-  private createExhibitDirectory(): void {
-    const entries = [
-      { x: -7.2, title: '高盐有机废水 MVR', status: 'CONNECTED' },
-      { x: 0, title: '膜分离处理技术', status: 'PLANNED' },
-      { x: 7.2, title: '智慧水务监测技术', status: 'PLANNED' },
-    ];
-    entries.forEach((entry, index) => {
+  /** Lightweight projections mirror the active definition; they are never physical equipment. */
+  private renderExhibitDirectory(definition: ZoneDefinition): void {
+    this.exhibitDirectory.clear();
+    this.exhibitPreviews.length = 0;
+    definition.exhibits.forEach((exhibit, index) => {
       const marker = new Group(); marker.name = `Digital exhibit entrance ${index + 1}`;
-      marker.position.set(entry.x, 0, -42);
+      marker.position.set(...exhibit.previewPosition);
       const pad = new Mesh(this.geometry(new RingGeometry(1.35, 1.47, 64)), this.material(new MeshBasicMaterial({ color: index === 0 ? '#b8fbff' : '#43cfe5', transparent: true, opacity: index === 0 ? 0.85 : 0.42, side: DoubleSide })));
       pad.rotation.x = -Math.PI / 2; pad.position.y = 0.055;
       const beam = new Mesh(this.geometry(new CylinderGeometry(0.82, 1.15, 3.6, 32, 1, true)), this.material(new MeshBasicMaterial({ color: '#4de4f4', transparent: true, opacity: 0.055, side: DoubleSide, depthWrite: false })));
@@ -226,8 +231,12 @@ export class ZoneViewer {
       const core = new Mesh(this.geometry(new OctahedronGeometry(index === 0 ? 0.72 : 0.58, 1)), this.material(new MeshBasicMaterial({ color: index === 0 ? '#d3fdff' : '#61d9e9', wireframe: true, transparent: true, opacity: index === 0 ? 0.9 : 0.5 })));
       const orbit = new Mesh(this.geometry(new TorusGeometry(1.02, 0.025, 6, 56)), this.material(new MeshBasicMaterial({ color: '#83eff9', transparent: true, opacity: 0.62 })));
       orbit.rotation.x = Math.PI / 2; preview.add(core, orbit); this.exhibitPreviews.push(preview);
-      marker.add(pad, beam, preview, this.createExhibitLabel(entry.title, entry.status, index));
-      this.group.add(marker);
+      marker.add(pad, beam, preview, this.createExhibitLabel(
+        exhibit.previewLabel,
+        exhibit.status === 'available' ? 'CONNECTED' : 'PLANNED',
+        index,
+      ));
+      this.exhibitDirectory.add(marker);
     });
   }
 
