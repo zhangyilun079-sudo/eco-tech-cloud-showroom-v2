@@ -1,5 +1,6 @@
 export const ViewMode = {
   SHOWROOM: 'SHOWROOM',
+  ZONE: 'ZONE',
   EXHIBIT: 'EXHIBIT',
   EXPLODED: 'EXPLODED',
   PROCESS: 'PROCESS',
