@@ -15,6 +15,8 @@ export interface ZoneDefinition {
   readonly description: string;
   readonly accent: string;
   readonly sceneOrigin: Vector3Tuple;
+  /** Threshold crossed by the camera before it settles into the zone view. */
+  readonly entryPosition: Vector3Tuple;
   readonly cameraPosition: Vector3Tuple;
   readonly cameraTarget: Vector3Tuple;
   readonly exhibitAnchors: readonly ZoneExhibitAnchorDefinition[];

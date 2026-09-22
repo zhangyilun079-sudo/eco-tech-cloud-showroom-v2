@@ -31,6 +31,9 @@ canvas.is-component-hovered, canvas.is-component-hovered:active { cursor: pointe
 .reset-button { pointer-events: auto; border: 1px solid rgba(221, 239, 226, .28); border-radius: 99px; color: #edf5ee; background: rgba(7, 24, 18, .38); backdrop-filter: blur(12px); padding: 12px 18px; font: 500 11px 'DM Sans', sans-serif; letter-spacing: .05em; cursor: pointer; transition: background .2s, border-color .2s; }
 .reset-button span { color: #90ddb2; margin-left: 12px; }
 .reset-button:hover { background: rgba(58, 111, 82, .35); border-color: #75c99b; }
+.info-panel.is-zone-mode .reset-button { display: none; }
+.info-panel.is-zone-mode .navigation-help { border-color: rgba(87, 221, 242, .22); background: rgba(4, 31, 45, .4); }
+.info-panel.is-zone-mode .mouse-icon { display: none; }
 
 .hotspot-label { position: fixed; z-index: 3; display: flex; align-items: center; gap: 12px; max-width: min(360px, calc(100vw - 32px)); padding: 10px 15px; border: 1px solid rgba(148, 231, 190, .4); border-radius: 12px; background: rgba(5, 22, 17, .88); box-shadow: 0 12px 40px rgba(0, 0, 0, .3); backdrop-filter: blur(14px); opacity: 0; visibility: hidden; transform: translate(-50%, calc(-100% - 22px)) scale(.97); transform-origin: 50% 100%; transition: opacity .14s, transform .14s, visibility .14s; will-change: left, top; }
 .hotspot-label::after { content: ''; position: absolute; left: 50%; top: 100%; width: 1px; height: 16px; background: linear-gradient(rgba(148, 231, 190, .65), rgba(148, 231, 190, .12)); }
@@ -47,7 +50,7 @@ canvas.is-component-hovered, canvas.is-component-hovered:active { cursor: pointe
 .zone-panel-title { max-width: 260px; color: #f1f7f2; font: 400 24px/1.35 Manrope, sans-serif; letter-spacing: -.02em; margin: 0 0 21px; }
 .zone-panel-description { color: rgba(226, 240, 229, .7); font-size: 13px; line-height: 1.9; white-space: pre-line; margin: 0; }
 
-.zone-viewer-panel { position: fixed; z-index: 5; inset: 0; padding: 13vh 7vw; color: #eefcff; pointer-events: none; opacity: 0; visibility: hidden; transform: translateY(12px); transition: opacity .55s .3s, transform .55s .3s, visibility .55s; background: linear-gradient(90deg, rgba(1, 12, 18, .7), transparent 48%); }
+.zone-viewer-panel { position: fixed; z-index: 5; inset: 0; padding: 13vh 7vw; color: #eefcff; pointer-events: none; opacity: 0; visibility: hidden; transform: translateY(12px); transition: opacity .55s .3s, transform .55s .3s, visibility .55s; background: linear-gradient(90deg, rgba(2, 24, 36, .62), transparent 48%), linear-gradient(180deg, rgba(34, 185, 218, .08), transparent 42%); }
 .zone-viewer-panel.is-visible { opacity: 1; visibility: visible; transform: translateY(0); }
 .zone-viewer-kicker { margin: 0 0 12px; color: #64e7f5; font: 600 9px 'DM Sans', sans-serif; letter-spacing: .22em; }
 .zone-viewer-panel h1 { margin: 0; font: 400 clamp(34px, 5vw, 64px)/1.12 Manrope, sans-serif; letter-spacing: -.04em; }
@@ -60,6 +63,9 @@ canvas.is-component-hovered, canvas.is-component-hovered:active { cursor: pointe
 .zone-exhibit-anchor small { margin-top: 4px; color: rgba(205, 239, 243, .45); font-size: 9px; }
 .zone-viewer-panel button { position: absolute; left: 7vw; bottom: 8vh; padding: 11px 17px; pointer-events: auto; border: 1px solid rgba(101, 227, 241, .35); border-radius: 99px; color: #dffaff; background: rgba(3, 25, 32, .75); cursor: pointer; }
 .zone-viewer-panel button:hover { border-color: #65e3f1; background: rgba(12, 61, 70, .8); }
+.zone-live-status { display: flex; gap: 8px; margin-top: 20px; color: rgba(188, 245, 255, .58); font-size: 9px; letter-spacing: .12em; }
+.zone-live-status span { padding: 6px 9px; border: 1px solid rgba(100, 231, 248, .2); border-radius: 3px; background: rgba(10, 62, 78, .28); }
+.zone-live-status span::before { content: ''; display: inline-block; width: 4px; height: 4px; margin-right: 6px; border-radius: 50%; background: #66ecfa; box-shadow: 0 0 7px #66ecfa; }
 
 .info-panel.is-exhibit-mode .controls-hint { opacity: 1; visibility: visible; transition: opacity .3s, visibility .3s; }
 .exhibit-panel { position: absolute; left: 52px; top: 50%; width: 360px; padding: 28px 28px 27px; border: 1px solid rgba(139, 238, 190, .2); border-left: 2px solid rgba(139, 238, 190, .65); border-radius: 2px 14px 14px 2px; background: linear-gradient(145deg, rgba(8, 27, 22, .91), rgba(6, 20, 17, .78)); box-shadow: 0 24px 70px rgba(0, 0, 0, .3); backdrop-filter: blur(18px); opacity: 0; visibility: hidden; transform: translate(-14px, -50%); transition: opacity .35s, transform .35s, visibility .35s; }

@@ -186,10 +186,14 @@ export class InfoPanel {
 
   public setViewMode(mode: ViewModeValue): void {
     const isShowroom = mode === ViewMode.SHOWROOM;
+    const isZone = mode === ViewMode.ZONE;
+    this.element.classList.toggle('is-zone-mode', isZone);
     this.navigationList.setAttribute('aria-label', isShowroom ? '展厅操作方式' : '展品操作方式');
     this.navigationList.innerHTML = isShowroom
       ? '<li><kbd>鼠标左键：</kbd><span>旋转视角</span></li><li><kbd>鼠标右键：</kbd><span>平移视角</span></li><li><kbd>滚轮：</kbd><span>缩放视图</span></li>'
-      : '<li><kbd>拖动鼠标：</kbd><span>旋转设备</span></li><li><kbd>滚轮：</kbd><span>缩放设备</span></li>';
+      : isZone
+        ? '<li><kbd>独立展区</kbd><span>智慧监测场景</span></li>'
+        : '<li><kbd>拖动鼠标：</kbd><span>旋转设备</span></li><li><kbd>滚轮：</kbd><span>缩放设备</span></li>';
   }
 
   /** Positions the HTML label at a hotspot's projected viewport coordinates. */
