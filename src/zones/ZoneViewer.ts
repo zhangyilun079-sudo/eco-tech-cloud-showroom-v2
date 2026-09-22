@@ -200,10 +200,10 @@ export class ZoneViewer {
   private renderDirectory(definition: ZoneDefinition): void {
     const list = this.panel.querySelector<HTMLOListElement>('.zone-exhibit-directory ol');
     if (!list) return;
-    list.replaceChildren(...definition.exhibitAnchors.map((anchor, index) => {
+    list.replaceChildren(...definition.exhibits.map((exhibit, index) => {
       const item = document.createElement('li');
-      item.className = anchor.status === 'connected' ? 'is-connected' : 'is-placeholder';
-      item.innerHTML = `<span>${String(index + 1).padStart(2, '0')}</span><div><strong>${anchor.label}</strong><small>${anchor.status === 'connected' ? 'CONNECTED · 已接入现有 MVR 展项' : 'PLANNED · 展项预留'}</small></div>`;
+      item.className = exhibit.status === 'available' ? 'is-connected' : 'is-placeholder';
+      item.innerHTML = `<span>${String(index + 1).padStart(2, '0')}</span><div><strong>${exhibit.name}</strong><small>${exhibit.status === 'available' ? 'CONNECTED · 已接入现有 MVR 展项' : 'PLANNED · 展项预留'}</small></div>`;
       return item;
     }));
   }

@@ -1,12 +1,6 @@
 import type { Vector3Tuple } from 'three';
 import type { ShowroomZoneId } from '../showroom/Showroom';
-
-export interface ZoneExhibitAnchorDefinition {
-  readonly id: string;
-  readonly label: string;
-  readonly position: Vector3Tuple;
-  readonly status: 'connected' | 'placeholder';
-}
+import type { ExhibitEntry } from './data/zoneExhibits';
 
 /** Data-only contract shared by zone navigation and future zone content. */
 export interface ZoneDefinition {
@@ -21,5 +15,5 @@ export interface ZoneDefinition {
   /** Normalized direction from the threshold toward the zone interior. */
   readonly entryDirection: Vector3Tuple;
   readonly cameraTarget: Vector3Tuple;
-  readonly exhibitAnchors: readonly ZoneExhibitAnchorDefinition[];
+  readonly exhibits: readonly ExhibitEntry[];
 }
