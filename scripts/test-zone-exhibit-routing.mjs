@@ -87,12 +87,15 @@ class Resource {
 }
 class Material extends Resource { constructor(properties) { super(properties); Object.assign(this, properties); } }
 class Mesh extends Group { constructor(geometry, material) { super(); this.geometry = geometry; this.material = material; } }
+class Light extends Group { constructor(color, intensity, distance) { super(); Object.assign(this, { color, intensity, distance }); } }
+class SpotLight extends Light { constructor(...args) { super(...args); this.target = new Group(); } }
 const three = {
   Vector3, Vector2: Vector3, Group, Scene: Group, Mesh,
   Box3: class { setFromObject() { return this; } getSize(v) { return v.set(8, 6, 4); } },
   MathUtils: { clamp: (v, min, max) => Math.max(min, Math.min(v, max)) },
   Clock: class {}, Color: class {}, Fog: class {},
   BufferGeometry: Resource, Material, MeshBasicMaterial: Material, MeshPhysicalMaterial: Material, MeshStandardMaterial: Material,
+  PointLight: Light, SpotLight,
   CanvasTexture: class extends Resource { constructor(image) { super(image); this.image = image; } },
   AdditiveBlending: 2, DoubleSide: 2, SRGBColorSpace: 'srgb',
 };
@@ -359,7 +362,8 @@ test('MVR showcase uses a visible frozen clone of the production model structure
   const display = previews(f.showcase)[0]; const clone = display.children[0];
   assert.equal(clone.name, 'Frozen MVR production model clone');
   assert.equal(clone.visible, true);
-  assert.equal(clone.scale.x, 0.42);
+  assert.equal(clone.scale.x, 0.56);
+  assert.equal(display.position.y, 0.78);
   assert.deepEqual(clone.children.map((component) => component.userData.componentId), [
     'steel-support-frame', 'mvr-evaporation-unit', 'heat-exchanger-module',
     'crystallization-salt-separation-unit', 'pump-system', 'piping-system',
@@ -367,6 +371,15 @@ test('MVR showcase uses a visible frozen clone of the production model structure
   ]);
   f.showcase.update(1);
   assert.equal(display.rotation.y, 0, 'The zone MVR clone must remain frozen');
+});
+test('ZONE_01 MVR label stays below and in front of the model with dedicated lighting', () => {
+  const f = showcaseFixture([mvr]); const stand = f.showcase.group.children[0];
+  const label = stand.children[3]; const lighting = stand.children[4];
+  assert.deepEqual(label.position, new Vector3(0, 0.72, 2.75));
+  assert.equal(lighting.name, 'ZONE_01 MVR industrial showcase lighting');
+  assert.deepEqual(lighting.children.map((light) => light.name), [
+    'MVR overhead industrial light', undefined, 'MVR cyan edge light',
+  ]);
 });
 test('all configured placements, labels and target metadata survive extraction', () => {
   const f = showcaseFixture();
