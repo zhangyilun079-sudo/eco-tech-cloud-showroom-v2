@@ -43,10 +43,10 @@ export const rtoTreatmentDefinition = {
   technicalAdvantages: [
     { title: '高效蓄热', description: '三组陶瓷蓄热床交替吸热与放热，回收净化烟气中的热量。', relatedComponents: ['thermal-bed-a', 'thermal-bed-b', 'thermal-bed-c'] },
     { title: '稳定氧化', description: '燃烧器补充热量，燃烧室提供均匀、稳定的高温反应空间。', relatedComponents: ['combustion-chamber', 'burner'] },
-    { title: '连续换向', description: '切换阀组协调进气、排气与吹扫支路，减少未处理气体逸出。', relatedComponents: ['valve-system', 'pipeline-system'] },
+    { title: '连续换向', description: '切换阀组协调进气、排气与吹扫支路，减少未处理气体逸出。', relatedComponents: ['valve-manifold', 'pipeline-network'] },
   ],
   technologyMetrics: [
-    { label: '运行方式', value: '三床轮换', note: '进气、排气、吹扫周期切换', relatedComponents: ['thermal-bed-a', 'thermal-bed-b', 'thermal-bed-c', 'valve-system'] },
+    { label: '运行方式', value: '三床轮换', note: '进气、排气、吹扫周期切换', relatedComponents: ['thermal-bed-a', 'thermal-bed-b', 'thermal-bed-c', 'valve-manifold'] },
     { label: '热量利用', value: '蓄热回收', note: '降低燃烧器持续补热需求', relatedComponents: ['combustion-chamber', 'thermal-bed-a', 'thermal-bed-b', 'thermal-bed-c'] },
     { label: '处理对象', value: '工业 VOCs', note: '实际参数按废气组分进行工程设计', relatedComponents: ['combustion-chamber', 'burner'] },
   ],
@@ -60,14 +60,14 @@ export const rtoTreatmentDefinition = {
     {
       id: 'rto-intake', title: '废气增压与分配',
       description: '待处理废气经风机增压后进入总管，由切换阀组分配至当前进气蓄热床。',
-      relatedComponents: ['fan-system', 'pipeline-system', 'valve-system'],
+      relatedComponents: ['blower-fan', 'heat-exchanger', 'pipeline-network', 'valve-manifold'],
       processPath: [{ x: -5.2, y: 0.78, z: 1.25 }, { x: -3.9, y: 0.78, z: 1.25 }, { x: -3.9, y: 0.78, z: 0 }, { x: -2.35, y: 0.78, z: 0 }],
       visualState: { color: '#4ddff1', particleSpeed: 0.2, label: '有机废气进气' },
     },
     {
       id: 'rto-preheat', title: '蓄热床预热',
       description: '废气自下而上通过进气床，与陶瓷蓄热体换热后升温并进入顶部燃烧室。',
-      relatedComponents: ['thermal-bed-a', 'pipeline-system'],
+      relatedComponents: ['thermal-bed-a', 'pipeline-network'],
       processPath: [{ x: -2.35, y: 0.78, z: 0 }, { x: -2.35, y: 2.4, z: 0 }, { x: -2.35, y: 4.65, z: 0 }, { x: 0, y: 5.15, z: 0 }],
       visualState: { color: '#ffd166', particleSpeed: 0.17, label: '升温预热' },
     },
@@ -81,7 +81,7 @@ export const rtoTreatmentDefinition = {
     {
       id: 'rto-heat-recovery', title: '蓄热与净化排放',
       description: '高温净化气体流经排气床并向蓄热体释放热量，再由阀组汇入排气管路；第三床执行吹扫准备下一周期。',
-      relatedComponents: ['thermal-bed-b', 'thermal-bed-c', 'valve-system', 'pipeline-system'],
+      relatedComponents: ['thermal-bed-b', 'thermal-bed-c', 'valve-manifold', 'pipeline-network', 'exhaust-stack'],
       processPath: [{ x: 2.35, y: 5.15, z: 0 }, { x: 2.35, y: 2.4, z: 0 }, { x: 2.35, y: 0.78, z: 0 }, { x: 4.1, y: 0.78, z: 0 }, { x: 5.35, y: 2.2, z: 0 }],
       visualState: { color: '#72efb3', particleSpeed: 0.19, label: '余热回收与排气' },
     },
@@ -92,8 +92,11 @@ export const rtoTreatmentDefinition = {
     component('thermal-bed-c', '蓄热床 C', '吹扫缓冲 / 周期换向', '在床层切换前进行净化气吹扫，降低残留有机废气直接进入排气侧的风险。', ['独立吹扫状态', '三床连续运行', '降低切换排放波动'], { x: 2.35, y: 2.45, z: 0 }, { x: 3.8, y: 0, z: 0 }),
     component('combustion-chamber', '顶部燃烧室', '高温氧化反应', '横跨三座蓄热床的保温反应室，为 VOCs 氧化提供稳定温度与停留空间。', ['一体式顶部腔体', '耐火保温内衬', '均匀气流组织'], { x: 0, y: 5.15, z: 0 }, { x: 0, y: 2.3, z: 0 }, 0.8),
     component('burner', '燃烧器', '启炉与温度补偿', '在启动或废气热值不足时提供补充热量，维持燃烧室反应条件。', ['自动比例调节', '火焰监测', '安全联锁'], { x: -3.7, y: 5.25, z: 0 }, { x: -5.2, y: 1.5, z: 0 }, 0.65),
-    component('valve-system', '切换阀组', '进排气换向控制', '通过联锁阀门周期切换三座床体的进气、排气和吹扫状态。', ['多阀联锁', '快速密封切换', '检修隔离设计'], { x: 0, y: 0.62, z: 0.15 }, { x: 0, y: -0.45, z: 3.2 }, 0.9),
-    component('fan-system', '风机系统', '废气输送与系统压差维持', '为废气克服管路、阀门和蓄热床阻力提供稳定动力。', ['离心风机', '减振基座', '流量调节'], { x: -5.05, y: 0.72, z: 1.25 }, { x: -6.5, y: 0, z: 2.8 }, 0.8),
-    component('pipeline-system', '进排气管路系统', '工艺气体输送', '连接风机、阀组、三座床体与烟囱，形成进气、排气及吹扫气路。', ['进排气分流总管', '法兰连接', '保温与检修接口'], { x: 0, y: 1.05, z: 0 }, { x: 0, y: 2.8, z: -2.7 }, 1.15),
+    component('blower-fan', '左侧离心风机', '废气输送与系统压差维持', '为废气克服换热器、管路、阀门和蓄热床阻力提供稳定动力。', ['离心叶轮可见', '减振基座', '流量调节'], { x: -4.9, y: 1.05, z: 1.2 }, { x: -6.5, y: 0, z: 2.8 }, 0.8),
+    component('heat-exchanger', '前置热交换器', '进气预换热', '回收可利用热量并稳定进入 RTO 的废气温度，内部换热管束以剖面形式展示。', ['多管束换热', '检修式壳体', '热量回收接口'], { x: -5.18, y: 3.35, z: -0.62 }, { x: -6.4, y: 1.5, z: -1.8 }, 0.8),
+    component('valve-manifold', '底部切换阀组', '进排气换向控制', '通过六组联锁阀门周期切换三座床体的进气、排气和吹扫状态。', ['六阀联锁', '快速密封切换', '检修隔离设计'], { x: 0, y: 0.82, z: 0.15 }, { x: 0, y: -0.45, z: 3.2 }, 0.9),
+    component('pipeline-network', '三色工艺管网', '工艺气体输送', '红色进气、紫色净化气与黄色辅助管线连接风机、阀组、三座床体及烟囱。', ['红色进气总管', '紫色出气总管', '黄色辅助管路'], { x: 0, y: 1.05, z: 0 }, { x: 0, y: 2.8, z: -2.7 }, 1.15),
+    component('exhaust-stack', '净化气排气筒', '净化气高位排放', '汇集完成氧化和热回收的净化气体，并通过独立排气筒排放。', ['独立竖向烟囱', '顶部防雨帽', '法兰检修段'], { x: 5.18, y: 3.2, z: -1.42 }, { x: 6.4, y: 0.7, z: -1.5 }, 0.8),
+    component('frame-support', '钢制框架支撑', '设备承载与检修支撑', '承载床体、燃烧室及管线，并保持剖开展示所需的结构稳定感。', ['型钢底座', '立柱横梁', '模块化承载'], { x: 0, y: 3, z: -1.1 }, { x: 0, y: 0, z: -3.2 }, 0.8),
   ],
 } as const satisfies ExhibitDefinition;
