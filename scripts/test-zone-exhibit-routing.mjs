@@ -372,13 +372,16 @@ test('MVR showcase uses a visible frozen clone of the production model structure
   f.showcase.update(1);
   assert.equal(display.rotation.y, 0, 'The zone MVR clone must remain frozen');
 });
-test('ZONE_01 MVR label stays below and in front of the model with dedicated lighting', () => {
+test('ZONE_01 MVR label, steel platform and dedicated lighting frame the model', () => {
   const f = showcaseFixture([mvr]); const stand = f.showcase.group.children[0];
-  const label = stand.children[3]; const lighting = stand.children[4];
+  const label = stand.children[3];
+  const platform = stand.getObjectByName('MVR steel exhibition platform');
+  const lighting = stand.getObjectByName('ZONE_01 MVR industrial showcase lighting');
   assert.deepEqual(label.position, new Vector3(0, 0.72, 2.75));
-  assert.equal(lighting.name, 'ZONE_01 MVR industrial showcase lighting');
+  assert.ok(platform);
+  assert.equal(platform.children.length, 9, 'deck, luminous rails and steel feet remain present');
   assert.deepEqual(lighting.children.map((light) => light.name), [
-    'MVR overhead industrial light', undefined, 'MVR cyan edge light',
+    'MVR overhead industrial light', undefined, 'MVR cyan edge light', 'MVR teal platform light',
   ]);
 });
 test('all configured placements, labels and target metadata survive extraction', () => {
