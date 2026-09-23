@@ -7,6 +7,8 @@ import {
 import type { Camera } from 'three';
 import { mvrWastewaterTreatmentDefinition } from '../../exhibits/data/mvrWastewaterTreatment';
 import { MvrWastewaterTreatmentModel } from '../../exhibits/models/MvrWastewaterTreatmentModel';
+import { rtoTreatmentDefinition } from '../../exhibits/data/rtoTreatment';
+import { RtoTreatmentModel } from '../../exhibits/models/rto/RtoTreatmentModel';
 import type { ExhibitEntry, ExhibitShowcaseKind } from '../data/zoneExhibits';
 
 interface StandHotspot {
@@ -27,6 +29,7 @@ export class ZoneExhibitStand {
   private readonly display: Group;
   private readonly hotspot: StandHotspot;
   private frozenMvrSource: MvrWastewaterTreatmentModel | null = null;
+  private frozenRtoSource: RtoTreatmentModel | null = null;
   private disposed = false;
 
   public constructor(public readonly entry: ExhibitEntry, private readonly index: number) {
@@ -43,7 +46,7 @@ export class ZoneExhibitStand {
       this.display = this.createPhysicalPlaceholder(entry.showcaseKind ?? 'generic', available);
       this.display.name = `Showcase preview: ${entry.showcaseKind ?? 'generic'}`;
       // Lift the hero equipment clear of both the plinth and its foreground sign.
-      this.display.position.y = isZone01Mvr ? 0.78 : 0.42;
+      this.display.position.y = isZone01Mvr ? 0.78 : entry.showcaseKind === 'rto' ? 0.56 : 0.42;
       this.hotspot = this.createHotspot(available);
       this.target = this.hotspot.target;
       this.group.add(plinth, this.display, this.hotspot.root, this.createLabel(available));
@@ -62,7 +65,7 @@ export class ZoneExhibitStand {
   public update(delta: number, elapsed: number, camera: Camera): void {
     if (this.disposed) return;
     // The production MVR clone is an exhibit, not an animated placeholder.
-    if (this.entry.showcaseKind !== 'mvr') this.display.rotation.y += delta * (0.08 + this.index * 0.015);
+    if (this.entry.showcaseKind !== 'mvr' && this.entry.showcaseKind !== 'rto') this.display.rotation.y += delta * (0.08 + this.index * 0.015);
     const pulse = (Math.sin(elapsed * 2.8 + this.index * 1.7) + 1) * 0.5;
     const hoverScale = this.hotspot.hovered ? 1.34 : 1;
     this.hotspot.root.scale.setScalar(hoverScale * (0.94 + pulse * 0.1));
@@ -84,6 +87,8 @@ export class ZoneExhibitStand {
     // scene graph first, then let the source retain sole disposal ownership.
     this.frozenMvrSource?.dispose();
     this.frozenMvrSource = null;
+    this.frozenRtoSource?.dispose();
+    this.frozenRtoSource = null;
     // These resources belong only to this stand; never dispose frozen Viewer assets.
     this.geometries.forEach((item) => item.dispose());
     this.materials.forEach((item) => item.dispose());
@@ -131,6 +136,16 @@ export class ZoneExhibitStand {
       // Preserve the complete plant silhouette while giving the lead exhibit
       // enough visual weight to read immediately from the zone entrance.
       frozenClone.scale.setScalar(0.56);
+      display.add(frozenClone);
+      return display;
+    }
+    if (kind === 'rto') {
+      this.frozenRtoSource = new RtoTreatmentModel(rtoTreatmentDefinition);
+      const frozenClone = this.frozenRtoSource.object.clone(true);
+      frozenClone.name = 'Frozen RTO production model clone';
+      frozenClone.visible = true;
+      frozenClone.scale.setScalar(0.82);
+      frozenClone.rotation.y = -Math.PI / 2;
       display.add(frozenClone);
       return display;
     }

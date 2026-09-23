@@ -28,6 +28,7 @@ export class ZoneViewer {
   private readonly materials: Material[] = [];
   private readonly textures: CanvasTexture[] = [];
   private readonly circulationRings: Group[] = [];
+  private readonly airStreams: Group[] = [];
   private readonly exhibitShowcase: ZoneExhibitShowcase;
   private readonly waterParticles: Points;
   private readonly panel: HTMLElement;
@@ -74,10 +75,11 @@ export class ZoneViewer {
       onSelect: (exhibit) => this.handleExhibitClick(exhibit),
     });
     this.waterParticles = this.createWaterEnvironment();
+    this.createAtmosphereEnvironment();
   }
 
   public enter(definition: ZoneDefinition, hotspotPosition: Vector3): boolean {
-    if (definition.id !== 'ZONE_01' || this.viewMode.mode !== ViewMode.SHOWROOM) return false;
+    if (!['ZONE_01', 'ZONE_04'].includes(definition.id) || this.viewMode.mode !== ViewMode.SHOWROOM) return false;
     this.currentDefinition = definition;
     this.suspendedContext = null;
     this.showroomState = this.camera.captureState();
@@ -88,6 +90,13 @@ export class ZoneViewer {
     this.title.textContent = definition.title;
     this.subtitle.textContent = definition.englishTitle;
     this.description.textContent = definition.description;
+    this.panel.dataset.zone = definition.id;
+    const kicker = this.panel.querySelector<HTMLElement>('.zone-viewer-kicker');
+    if (kicker) kicker.textContent = `${definition.id} · ${definition.englishTitle}`;
+    const liveStatus = this.panel.querySelector<HTMLElement>('.zone-live-status');
+    if (liveStatus) liveStatus.innerHTML = definition.id === 'ZONE_04'
+      ? '<span>燃烧室温度稳定</span><span>废气流路在线</span>'
+      : '<span>水质监测在线</span><span>循环系统稳定</span>';
     console.info('[ZoneViewer] zone exhibit data', {
       zoneId: definition.id,
       zoneName: definition.title,
@@ -165,6 +174,10 @@ export class ZoneViewer {
       this.exhibitShowcase.update(delta);
       this.waterParticles.rotation.y += delta * 0.055;
       this.waterParticles.position.y = Math.sin(this.elapsed * 0.55) * 0.08;
+      this.airStreams.forEach((stream, index) => {
+        stream.position.x = 126 + Math.sin(this.elapsed * (0.45 + index * 0.04) + index) * 1.1;
+        stream.rotation.y += delta * (index % 2 ? 0.08 : -0.06);
+      });
     }
     if (!this.transition) return;
     this.transition.elapsed = Math.min(this.transition.duration, this.transition.elapsed + delta);
@@ -255,6 +268,46 @@ export class ZoneViewer {
     display.position.copy(position); display.rotation.y = rotationY; this.group.add(display);
     const base = new Mesh(this.geometry(new CylinderGeometry(0.9, 1.25, 0.22, 32)), this.material(new MeshPhysicalMaterial({ color: '#1bb3cf', transparent: true, opacity: 0.42, transmission: 0.35 })));
     base.position.set(position.x, 0.12, position.z + 1); this.group.add(base);
+  }
+
+  /** A separate, hot industrial atmosphere located at ZONE_04's authored origin. */
+  private createAtmosphereEnvironment(): void {
+    const origin = new Vector3(126, 0, -42);
+    const floor = new Mesh(this.geometry(new PlaneGeometry(32, 27)), this.material(new MeshPhysicalMaterial({ color: '#17100e', emissive: '#2a0d05', emissiveIntensity: 0.48, metalness: 0.72, roughness: 0.32, clearcoat: 0.45 })));
+    floor.name = 'ZONE_04 dark industrial floor';
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.copy(origin);
+    this.group.add(floor);
+
+    const steel = this.material(new MeshStandardMaterial({ color: '#261b19', emissive: '#3a1209', emissiveIntensity: 0.28, metalness: 0.82, roughness: 0.38 }));
+    const hot = this.material(new MeshBasicMaterial({ color: '#ff572b', transparent: true, opacity: 0.8, blending: AdditiveBlending, depthWrite: false }));
+    for (const x of [113, 139]) {
+      const wall = new Mesh(this.geometry(new PlaneGeometry(27, 9)), steel);
+      wall.rotation.y = Math.PI / 2; wall.position.set(x, 4.5, -42); this.group.add(wall);
+      for (const z of [-51, -45, -39, -33]) {
+        const rib = new Mesh(this.geometry(new BoxGeometry(0.3, 9, 0.32)), steel);
+        rib.position.set(x, 4.5, z); this.group.add(rib);
+      }
+    }
+    const back = new Mesh(this.geometry(new PlaneGeometry(26, 9)), steel);
+    back.position.set(126, 4.5, -53); this.group.add(back);
+    for (const z of [-50, -46, -38, -34]) {
+      const lane = new Mesh(this.geometry(new BoxGeometry(25, 0.035, 0.07)), hot);
+      lane.position.set(126, 0.035, z); this.group.add(lane);
+    }
+
+    // Layered translucent rings suggest hot process gas being drawn through the plant.
+    for (let i = 0; i < 7; i += 1) {
+      const stream = new Group();
+      stream.name = 'ZONE_04 airflow visualization';
+      stream.position.set(126, 1.1 + i * 0.72, -42 + Math.sin(i * 1.7) * 5.2);
+      const ring = new Mesh(this.geometry(new TorusGeometry(1.5 + (i % 3) * 0.35, 0.035, 6, 54)), hot);
+      ring.rotation.x = Math.PI / 2; ring.scale.y = 0.5; stream.add(ring);
+      this.airStreams.push(stream); this.group.add(stream);
+    }
+    const amber = new PointLight('#ff6a2b', 95, 24, 1.6); amber.position.set(123, 5.8, -43);
+    const red = new PointLight('#d92816', 70, 18, 1.7); red.position.set(132, 2.8, -47);
+    this.group.add(amber, red);
   }
 
   private handleExhibitClick(exhibit: ExhibitEntry): void {

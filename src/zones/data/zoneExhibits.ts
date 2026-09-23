@@ -1,10 +1,11 @@
 import type { Vector3Tuple } from 'three';
 import { mvrWastewaterTreatmentDefinition } from '../../exhibits/data/mvrWastewaterTreatment';
+import { rtoTreatmentDefinition } from '../../exhibits/data/rtoTreatment';
 import type { ShowroomZoneId } from '../../showroom/Showroom';
 
 export type ExhibitStatus = 'available' | 'coming';
 export type ExhibitPreviewType = 'interactive' | 'holographic';
-export type ExhibitShowcaseKind = 'mvr' | 'membrane' | 'monitoring' | 'generic';
+export type ExhibitShowcaseKind = 'mvr' | 'rto' | 'membrane' | 'monitoring' | 'generic';
 
 /** Catalog entry shared by zone exhibit spaces and exhibit-viewer routing. */
 export interface ExhibitEntry {
@@ -66,4 +67,20 @@ export const zone01Exhibits: readonly ExhibitEntry[] = [
   },
 ] as const;
 
-export const zoneExhibits: readonly ExhibitEntry[] = [...zone01Exhibits];
+export const zone04Exhibits: readonly ExhibitEntry[] = [
+  {
+    id: 'THREE_BED_RTO',
+    zoneId: 'ZONE_04',
+    name: '三床式 RTO 废气处理系统',
+    category: '工业废气治理',
+    description: '三座蓄热床轮换预热、吹扫与蓄热，在燃烧室内高温氧化 VOCs，并通过风机和管路维持连续运行。',
+    status: 'available',
+    previewType: 'interactive',
+    viewerId: rtoTreatmentDefinition.id,
+    showcaseKind: 'rto',
+    previewPosition: [126, 0, -42],
+    previewLabel: '三床式 RTO 废气处理系统',
+  },
+] as const;
+
+export const zoneExhibits: readonly ExhibitEntry[] = [...zone01Exhibits, ...zone04Exhibits];

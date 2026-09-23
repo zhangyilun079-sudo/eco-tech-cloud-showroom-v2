@@ -130,8 +130,9 @@ const metadata = { id: 'canonical-mvr-test-definition', components: [] };
 const definitionModule = { mvrWastewaterTreatmentDefinition: metadata };
 const rtoMetadata = { id: 'canonical-rto-test-definition', components: [], processSteps: [] };
 const rtoDefinitionModule = { rtoTreatmentDefinition: rtoMetadata };
-const { zone01Exhibits: entries } = load('src/zones/data/zoneExhibits.ts', {
+const { zone01Exhibits: entries, zone04Exhibits } = load('src/zones/data/zoneExhibits.ts', {
   '../../exhibits/data/mvrWastewaterTreatment': definitionModule,
+  '../../exhibits/data/rtoTreatment': rtoDefinitionModule,
 });
 const mvr = entries[0];
 const { ExhibitViewer } = load('src/exhibits/ExhibitViewer.ts', { three, '../core/ViewMode': modes });
@@ -146,10 +147,21 @@ class FrozenMvrDouble {
   }
   dispose() { this.object.clear(); }
 }
+class FrozenRtoDouble {
+  constructor(value) {
+    this.metadata = value; this.object = new Group(); this.object.visible = false;
+    for (const name of ['thermal-bed-a', 'thermal-bed-b', 'thermal-bed-c', 'combustion-chamber', 'fan-system', 'pipeline-system']) {
+      const component = new Group(); component.userData.componentId = name; this.object.add(component);
+    }
+  }
+  dispose() { this.object.clear(); }
+}
 const standModule = load('src/zones/components/ZoneExhibitStand.ts', {
   three,
   '../../exhibits/data/mvrWastewaterTreatment': definitionModule,
   '../../exhibits/models/MvrWastewaterTreatmentModel': { MvrWastewaterTreatmentModel: FrozenMvrDouble },
+  '../../exhibits/data/rtoTreatment': rtoDefinitionModule,
+  '../../exhibits/models/rto/RtoTreatmentModel': { RtoTreatmentModel: FrozenRtoDouble },
 });
 const showcaseModule = load('src/zones/components/ZoneExhibitShowcase.ts', {
   three, './ZoneExhibitStand': standModule,
@@ -161,6 +173,7 @@ const { ZoneViewer } = load('src/zones/ZoneViewer.ts', {
 });
 // Omit environmental meshes only; use the real stand, showcase, click and return methods.
 ZoneViewer.prototype.createWaterEnvironment = () => new Group();
+ZoneViewer.prototype.createAtmosphereEnvironment = () => {};
 class CameraController {
   constructor() { this.camera = new Group(); this.target = new Vector3(); this.enabled = true; }
   captureState() { return { position: this.camera.position.clone(), target: this.target.clone() }; }
@@ -377,6 +390,22 @@ test('MVR showcase uses a visible frozen clone of the production model structure
   ]);
   f.showcase.update(1);
   assert.equal(display.rotation.y, 0, 'The zone MVR clone must remain frozen');
+});
+test('ZONE_04 RTO showcase is a static production-model clone routed to its viewer', () => {
+  const rto = zone04Exhibits[0];
+  assert.equal(rto.zoneId, 'ZONE_04');
+  assert.equal(rto.viewerId, rtoMetadata.id);
+  const f = showcaseFixture([rto]);
+  const display = previews(f.showcase)[0]; const clone = display.children[0];
+  assert.equal(clone.name, 'Frozen RTO production model clone');
+  assert.equal(clone.visible, true);
+  assert.deepEqual(clone.children.map((component) => component.userData.componentId), [
+    'thermal-bed-a', 'thermal-bed-b', 'thermal-bed-c', 'combustion-chamber', 'fan-system', 'pipeline-system',
+  ]);
+  f.showcase.update(1);
+  assert.equal(display.rotation.y, 0, 'The zone RTO clone must not auto-rotate');
+  f.picker.onClick(f.showcase.targets[0]);
+  assert.equal(f.selected[0], rto);
 });
 test('ZONE_01 MVR label stays below and in front of the model with dedicated lighting', () => {
   const f = showcaseFixture([mvr]); const stand = f.showcase.group.children[0];
