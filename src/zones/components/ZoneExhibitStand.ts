@@ -1,8 +1,8 @@
 import {
   AdditiveBlending, BoxGeometry, BufferGeometry, CanvasTexture, CylinderGeometry,
   DoubleSide, Group, Material, Mesh, MeshBasicMaterial, MeshPhysicalMaterial,
-  MeshStandardMaterial, OctahedronGeometry, PlaneGeometry, RingGeometry,
-  SphereGeometry, SRGBColorSpace,
+  MeshStandardMaterial, OctahedronGeometry, PlaneGeometry, PointLight, RingGeometry,
+  SphereGeometry, SpotLight, SRGBColorSpace,
 } from 'three';
 import type { Camera } from 'three';
 import { mvrWastewaterTreatmentDefinition } from '../../exhibits/data/mvrWastewaterTreatment';
@@ -31,6 +31,7 @@ export class ZoneExhibitStand {
 
   public constructor(public readonly entry: ExhibitEntry, private readonly index: number) {
     const available = entry.status === 'available' && Boolean(entry.viewerId);
+    const isZone01Mvr = entry.zoneId === 'ZONE_01' && entry.showcaseKind === 'mvr';
     this.group.name = `Exhibit showcase ${index + 1}`;
     this.group.position.set(...entry.previewPosition);
     try {
@@ -41,10 +42,12 @@ export class ZoneExhibitStand {
       plinth.position.y = 0.21;
       this.display = this.createPhysicalPlaceholder(entry.showcaseKind ?? 'generic', available);
       this.display.name = `Showcase preview: ${entry.showcaseKind ?? 'generic'}`;
-      this.display.position.y = 0.42;
+      // Lift the hero equipment clear of both the plinth and its foreground sign.
+      this.display.position.y = isZone01Mvr ? 0.78 : 0.42;
       this.hotspot = this.createHotspot(available);
       this.target = this.hotspot.target;
       this.group.add(plinth, this.display, this.hotspot.root, this.createLabel(available));
+      if (isZone01Mvr) this.group.add(this.createMvrLighting());
     } catch (error) {
       // A failed label/mesh creation must not strand resources during a rebuild.
       this.dispose();
@@ -125,7 +128,9 @@ export class ZoneExhibitStand {
       const frozenClone = this.frozenMvrSource.object.clone(true);
       frozenClone.name = 'Frozen MVR production model clone';
       frozenClone.visible = true;
-      frozenClone.scale.setScalar(0.42);
+      // Preserve the complete plant silhouette while giving the lead exhibit
+      // enough visual weight to read immediately from the zone entrance.
+      frozenClone.scale.setScalar(0.56);
       display.add(frozenClone);
       return display;
     }
@@ -158,7 +163,26 @@ export class ZoneExhibitStand {
     context.fillStyle = available ? '#effeff' : '#9bdae2'; context.font = '500 29px sans-serif'; context.fillText(this.entry.previewLabel, 30, 102);
     context.fillStyle = '#54bdcc'; context.font = '18px sans-serif'; context.fillText(available ? '点击热点进入展项' : '展项预留', 30, 145);
     const texture = new CanvasTexture(canvas); texture.colorSpace = SRGBColorSpace; this.textures.add(texture);
-    const label = new Mesh(this.geometry(new PlaneGeometry(5.4, 1.35)), this.material(new MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false })));
-    label.position.set(0, 1.1, 1.5); return label;
+    const isZone01Mvr = this.entry.zoneId === 'ZONE_01' && this.entry.showcaseKind === 'mvr';
+    const label = new Mesh(this.geometry(new PlaneGeometry(isZone01Mvr ? 4.6 : 5.4, isZone01Mvr ? 1.15 : 1.35)), this.material(new MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false })));
+    // The MVR sign sits low and forward, leaving the complete equipment body unobscured.
+    label.position.set(0, isZone01Mvr ? 0.72 : 1.1, isZone01Mvr ? 2.75 : 1.5); return label;
+  }
+
+  private createMvrLighting(): Group {
+    const lighting = new Group();
+    lighting.name = 'ZONE_01 MVR industrial showcase lighting';
+
+    const topLight = new SpotLight('#f1fbff', 62, 12, Math.PI / 5, 0.45, 1.25);
+    topLight.name = 'MVR overhead industrial light';
+    topLight.position.set(0, 6.2, 1.2);
+    topLight.target.position.set(0, 2.1, 0);
+
+    const cyanRim = new PointLight('#39e9ff', 48, 9, 1.45);
+    cyanRim.name = 'MVR cyan edge light';
+    cyanRim.position.set(-3.1, 2.8, -1.8);
+
+    lighting.add(topLight, topLight.target, cyanRim);
+    return lighting;
   }
 }
