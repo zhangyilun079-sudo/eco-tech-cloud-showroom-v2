@@ -22,6 +22,13 @@ interface ExhibitHotspot {
   hovered: boolean;
 }
 
+export interface ZoneExhibitReturnContext {
+  readonly zoneId: ZoneDefinition['id'];
+  readonly title: string;
+  readonly cameraState: CameraState;
+  readonly showroomCameraState: CameraState;
+}
+
 /** Owns the independent zone environment and its two-stage entrance transition. */
 export class ZoneViewer {
   public readonly group = new Group();
@@ -43,6 +50,8 @@ export class ZoneViewer {
   private readonly exhibitTargets: Mesh[] = [];
   private transition: Transition | null = null;
   private showroomState: CameraState | null = null;
+  private currentDefinition: ZoneDefinition | null = null;
+  private suspendedContext: ZoneExhibitReturnContext | null = null;
   private elapsed = 0;
   private statusMessageTimer: number | null = null;
 
@@ -53,7 +62,7 @@ export class ZoneViewer {
     private readonly viewMode: ViewModeState,
     private readonly onVisibilityChange: (zoneActive: boolean) => void,
     private readonly onReturn: () => void,
-    private readonly prepareExhibit: (viewerId: string, position: Vector3) => (() => void) | null,
+    private readonly prepareExhibit: (viewerId: string, position: Vector3) => (() => boolean) | null,
   ) {
     this.group.name = 'ZONE_01 water intelligence center';
     this.group.visible = false;
@@ -74,7 +83,7 @@ export class ZoneViewer {
     this.raycastManager = new RaycastManager({
       camera: this.camera.camera,
       canvas: this.canvas,
-      getTargets: () => this.viewMode.mode === ViewMode.ZONE ? this.exhibitTargets : [],
+      getTargets: () => this.viewMode.mode === ViewMode.ZONE && !this.transition && !this.suspendedContext ? this.exhibitTargets : [],
       onHover: (target) => {
         const hotspot = target?.userData.hotspot as ExhibitHotspot | undefined;
         this.exhibitHotspots.forEach((candidate) => {
@@ -92,6 +101,8 @@ export class ZoneViewer {
 
   public enter(definition: ZoneDefinition, hotspotPosition: Vector3): boolean {
     if (definition.id !== 'ZONE_01' || this.viewMode.mode !== ViewMode.SHOWROOM) return false;
+    this.currentDefinition = definition;
+    this.suspendedContext = null;
     this.showroomState = this.camera.captureState();
     this.viewMode.set(ViewMode.ZONE);
     this.camera.setNavigationEnabled(false);
@@ -130,11 +141,42 @@ export class ZoneViewer {
     this.begin(this.showroomState, ENTRY_DURATION + SETTLE_DURATION, () => {
       this.group.visible = false;
       this.showroomState = null;
+      this.currentDefinition = null;
+      this.suspendedContext = null;
       this.viewMode.set(ViewMode.SHOWROOM);
       this.camera.setNavigationEnabled(true);
       this.onReturn();
     });
   };
+
+  public get exhibitReturnContext(): ZoneExhibitReturnContext | null {
+    return this.suspendedContext;
+  }
+
+  /** Reveal only the environment during the viewer-owned return animation. */
+  public showReturnEnvironment(): void {
+    if (this.suspendedContext) this.group.visible = true;
+  }
+
+  /** Resume the same scene; do not re-enter the zone or replay its entrance flight. */
+  public resumeFromExhibit(): void {
+    if (!this.suspendedContext || this.viewMode.mode !== ViewMode.ZONE) return;
+    this.suspendedContext = null;
+    this.group.visible = true;
+    this.panel.classList.add('is-visible');
+    this.panel.setAttribute('aria-hidden', 'false');
+    this.camera.setNavigationEnabled(false);
+    this.onVisibilityChange(true);
+  }
+
+  public discardExhibitReturn(): void {
+    this.suspendedContext = null;
+    this.currentDefinition = null;
+    this.showroomState = null;
+    this.group.visible = false;
+    this.panel.classList.remove('is-visible');
+    this.panel.setAttribute('aria-hidden', 'true');
+  }
 
   public update(delta: number): void {
     if (this.group.visible) {
@@ -340,7 +382,7 @@ export class ZoneViewer {
   }
 
   private handleExhibitClick(exhibit: ExhibitEntry): void {
-    if (this.viewMode.mode !== ViewMode.ZONE || this.transition) return;
+    if (this.viewMode.mode !== ViewMode.ZONE || this.transition || this.suspendedContext) return;
     if (exhibit.status === 'coming' || !exhibit.viewerId) {
       this.showStatusMessage(`${exhibit.previewLabel} · 即将开放`);
       return;
@@ -354,20 +396,27 @@ export class ZoneViewer {
     }
     console.info('[ZoneViewer] exhibit hotspot clicked', { id: exhibit.id, viewerId: exhibit.viewerId });
 
-    // ExhibitViewer accepts entries from SHOWROOM mode. Restore that owning state
-    // before routing to the already registered viewer; exiting the exhibit will
-    // therefore return to the main showroom rather than an invisible zone.
-    if (this.showroomState) this.camera.applyState(this.showroomState);
-    this.transition = null;
-    this.showroomState = null;
+    if (!this.currentDefinition || !this.showroomState) return;
+    this.suspendedContext = {
+      zoneId: this.currentDefinition.id,
+      title: this.currentDefinition.title,
+      cameraState: this.camera.captureState(),
+      showroomCameraState: this.showroomState,
+    };
+    // Keep both return views and the existing scene. Never reset to the main hall
+    // merely to open a zone exhibit; ExhibitViewer accepts ZONE directly.
     this.group.visible = false;
     this.panel.classList.remove('is-visible');
     this.panel.setAttribute('aria-hidden', 'true');
     this.canvas.classList.remove('is-zone-exhibit-hovered');
-    this.viewMode.set(ViewMode.SHOWROOM);
-    this.camera.setNavigationEnabled(true);
-    this.onVisibilityChange(false);
-    openExhibit();
+    this.exhibitHotspots.forEach((hotspot) => this.onPointerOut(hotspot));
+    if (this.statusMessageTimer !== null) window.clearTimeout(this.statusMessageTimer);
+    this.statusMessageTimer = null;
+    this.statusMessage.classList.remove('is-visible');
+    if (!openExhibit()) {
+      this.resumeFromExhibit();
+      this.showStatusMessage('展品暂时无法打开，请重试');
+    }
   }
 
   private showStatusMessage(message: string): void {
