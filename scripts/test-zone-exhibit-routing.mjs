@@ -128,6 +128,8 @@ const { ViewMode } = modes;
 // An arbitrary supplied ID detects reintroduction of a hardcoded "mvr" alias.
 const metadata = { id: 'canonical-mvr-test-definition', components: [] };
 const definitionModule = { mvrWastewaterTreatmentDefinition: metadata };
+const rtoMetadata = { id: 'canonical-rto-test-definition', components: [], processSteps: [] };
+const rtoDefinitionModule = { rtoTreatmentDefinition: rtoMetadata };
 const { zone01Exhibits: entries } = load('src/zones/data/zoneExhibits.ts', {
   '../../exhibits/data/mvrWastewaterTreatment': definitionModule,
 });
@@ -188,7 +190,11 @@ const { ShowroomApplication } = load('src/core/ShowroomApplication.ts', {
   '../exhibits/explosion/ExplosionController': { ExplosionController: Controller },
   '../exhibits/components/ComponentInteractionManager': { ComponentInteractionManager: Controller },
   '../exhibits/data/mvrWastewaterTreatment': definitionModule,
+  '../exhibits/data/rtoTreatment': rtoDefinitionModule,
   '../exhibits/models/MvrWastewaterTreatmentModel': { MvrWastewaterTreatmentModel: class {
+    constructor(value) { this.metadata = value; this.object = new Group(); this.object.visible = false; }
+  } },
+  '../exhibits/models/rto/RtoTreatmentModel': { RtoTreatmentModel: class {
     constructor(value) { this.metadata = value; this.object = new Group(); this.object.visible = false; }
   } },
   '../exhibits/process/ProcessController': { ProcessController: Controller },
