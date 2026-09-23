@@ -2,7 +2,7 @@ import {
   AdditiveBlending, BoxGeometry, BufferGeometry, CanvasTexture, Color, CylinderGeometry,
   DoubleSide, Float32BufferAttribute, Group, Material, Mesh, MeshBasicMaterial,
   MeshPhysicalMaterial, MeshStandardMaterial, OctahedronGeometry, PlaneGeometry, PointLight, Points,
-  PointsMaterial, RingGeometry, SRGBColorSpace, TorusGeometry, Vector3,
+  PointsMaterial, RingGeometry, SphereGeometry, SRGBColorSpace, TorusGeometry, Vector3,
 } from 'three';
 import type { CameraController, CameraState } from '../core/CameraController';
 import { RaycastManager } from '../interaction/RaycastManager';
@@ -13,6 +13,14 @@ import type { ExhibitEntry } from './data/zoneExhibits';
 const ENTRY_DURATION = 0.78;
 const SETTLE_DURATION = 0.62;
 interface Transition { readonly from: CameraState; readonly to: CameraState; readonly duration: number; elapsed: number; readonly complete?: () => void }
+interface ExhibitHotspot {
+  readonly root: Group;
+  readonly core: Mesh<SphereGeometry, MeshStandardMaterial>;
+  readonly rings: readonly Mesh<RingGeometry, MeshBasicMaterial>[];
+  readonly available: boolean;
+  readonly phase: number;
+  hovered: boolean;
+}
 
 /** Owns the independent zone environment and its two-stage entrance transition. */
 export class ZoneViewer {
@@ -22,6 +30,7 @@ export class ZoneViewer {
   private readonly textures: CanvasTexture[] = [];
   private readonly circulationRings: Group[] = [];
   private readonly exhibitDisplays: Group[] = [];
+  private readonly exhibitHotspots: ExhibitHotspot[] = [];
   private readonly exhibitSpace = new Group();
   private readonly waterParticles: Points;
   private readonly panel: HTMLElement;
@@ -29,11 +38,13 @@ export class ZoneViewer {
   private readonly subtitle: HTMLElement;
   private readonly description: HTMLElement;
   private readonly returnButton: HTMLButtonElement;
+  private readonly statusMessage: HTMLElement;
   private readonly raycastManager: RaycastManager;
   private readonly exhibitTargets: Mesh[] = [];
   private transition: Transition | null = null;
   private showroomState: CameraState | null = null;
   private elapsed = 0;
+  private statusMessageTimer: number | null = null;
 
   public constructor(
     container: HTMLElement,
@@ -49,11 +60,12 @@ export class ZoneViewer {
     this.panel = document.createElement('section');
     this.panel.className = 'zone-viewer-panel';
     this.panel.setAttribute('aria-hidden', 'true');
-    this.panel.innerHTML = `<p class="zone-viewer-kicker">ZONE_01 · WATER INTELLIGENCE CENTER</p><h1></h1><p class="zone-viewer-subtitle"></p><p class="zone-viewer-description"></p><div class="zone-live-status"><span>水质监测在线</span><span>循环系统稳定</span></div><p class="zone-explore-hint">探索空间中的展项热点</p><button class="zone-return" type="button">← 返回主展厅</button>`;
+    this.panel.innerHTML = `<p class="zone-viewer-kicker">ZONE_01 · WATER INTELLIGENCE CENTER</p><h1></h1><p class="zone-viewer-subtitle"></p><p class="zone-viewer-description"></p><div class="zone-live-status"><span>水质监测在线</span><span>循环系统稳定</span></div><p class="zone-explore-hint">探索空间中的展项热点</p><div class="zone-exhibit-status" role="status" aria-live="polite"></div><button class="zone-return" type="button">← 返回主展厅</button>`;
     container.append(this.panel);
     this.title = this.required('h1');
     this.subtitle = this.required('.zone-viewer-subtitle');
     this.description = this.required('.zone-viewer-description');
+    this.statusMessage = this.required('.zone-exhibit-status');
     const button = this.panel.querySelector<HTMLButtonElement>('button');
     if (!button) throw new Error('Zone return button was not created.');
     this.returnButton = button;
@@ -64,6 +76,11 @@ export class ZoneViewer {
       canvas: this.canvas,
       getTargets: () => this.viewMode.mode === ViewMode.ZONE ? this.exhibitTargets : [],
       onHover: (target) => {
+        const hotspot = target?.userData.hotspot as ExhibitHotspot | undefined;
+        this.exhibitHotspots.forEach((candidate) => {
+          if (candidate === hotspot) this.onPointerOver(candidate);
+          else this.onPointerOut(candidate);
+        });
         this.canvas.classList.toggle('is-zone-exhibit-hovered', target !== null);
       },
       onClick: (target) => {
@@ -129,6 +146,18 @@ export class ZoneViewer {
       this.exhibitDisplays.forEach((display, index) => {
         display.rotation.y += delta * (0.08 + index * 0.015);
       });
+      this.exhibitHotspots.forEach((hotspot) => {
+        const pulse = (Math.sin(this.elapsed * 2.8 + hotspot.phase) + 1) * 0.5;
+        const hoverScale = hotspot.hovered ? 1.34 : 1;
+        hotspot.root.scale.setScalar(hoverScale * (0.94 + pulse * 0.1));
+        hotspot.root.quaternion.copy(this.camera.camera.quaternion);
+        hotspot.rings[0].rotation.z += delta * 0.75;
+        hotspot.rings[1].rotation.z -= delta * 0.48;
+        hotspot.rings.forEach((ring, index) => {
+          ring.material.opacity = (hotspot.hovered ? 0.96 : 0.48) + pulse * (index === 0 ? 0.18 : 0.1);
+        });
+        hotspot.core.material.emissiveIntensity = (hotspot.hovered ? 3.2 : 1.65) + pulse * 0.75;
+      });
       this.waterParticles.rotation.y += delta * 0.055;
       this.waterParticles.position.y = Math.sin(this.elapsed * 0.55) * 0.08;
     }
@@ -144,6 +173,7 @@ export class ZoneViewer {
     this.returnButton.removeEventListener('click', this.exit);
     this.raycastManager.dispose();
     this.canvas.classList.remove('is-zone-exhibit-hovered');
+    if (this.statusMessageTimer !== null) window.clearTimeout(this.statusMessageTimer);
     this.panel.remove();
     this.geometries.forEach((item) => item.dispose());
     this.materials.forEach((item) => item.dispose());
@@ -227,6 +257,7 @@ export class ZoneViewer {
   private renderExhibitSpace(definition: ZoneDefinition): void {
     this.exhibitSpace.clear();
     this.exhibitDisplays.length = 0;
+    this.exhibitHotspots.length = 0;
     this.exhibitTargets.length = 0;
     definition.exhibits.forEach((exhibit, index) => {
       const marker = new Group(); marker.name = `Exhibit showcase ${index + 1}`;
@@ -237,23 +268,54 @@ export class ZoneViewer {
       const display = this.createPhysicalPlaceholder(index, available);
       display.position.y = 0.42;
       this.exhibitDisplays.push(display);
-      const hotspot = new Mesh(this.geometry(new RingGeometry(0.28, 0.48, 40)), this.material(new MeshBasicMaterial({ color: available ? '#d6fdff' : '#5fcbd8', transparent: true, opacity: available ? 0.95 : 0.48, side: DoubleSide, depthWrite: false })));
-      hotspot.position.set(0, 2.95, 0); hotspot.rotation.x = -Math.PI / 2;
-      const hotspotCore = new Mesh(this.geometry(new OctahedronGeometry(0.2, 0)), this.material(new MeshBasicMaterial({ color: available ? '#ffffff' : '#70d3df', transparent: true, opacity: available ? 0.96 : 0.55 })));
-      hotspotCore.position.y = 2.95;
-      marker.add(plinth, display, hotspot, hotspotCore, this.createExhibitLabel(
+      const hotspot = this.createExhibitHotspot(exhibit, index, available);
+      marker.add(plinth, display, hotspot.root, this.createExhibitLabel(
         exhibit.previewLabel,
         available ? '点击热点进入展项' : '展项预留',
         index,
       ));
-      if (available) {
-        for (const target of [hotspot, hotspotCore]) {
-          target.userData.exhibit = exhibit;
-          this.exhibitTargets.push(target);
-        }
-      }
       this.exhibitSpace.add(marker);
     });
+  }
+
+  private createExhibitHotspot(exhibit: ExhibitEntry, index: number, available: boolean): ExhibitHotspot {
+    const root = new Group();
+    root.name = `Exhibit hotspot: ${exhibit.id}`;
+    root.position.set(0, 3.15, 0.35);
+    const color = available ? '#9af7ff' : '#4fabb8';
+    const core = new Mesh(
+      this.geometry(new SphereGeometry(0.2, 20, 14)),
+      this.material(new MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 1.65, roughness: 0.15, metalness: 0.25 })),
+    );
+    const rings = [0.42, 0.62].map((radius) => new Mesh(
+      this.geometry(new RingGeometry(radius - 0.025, radius + 0.025, 48)),
+      this.material(new MeshBasicMaterial({ color, transparent: true, opacity: 0.5, side: DoubleSide, depthWrite: false, blending: AdditiveBlending })),
+    ));
+    rings[1].rotation.z = Math.PI / 4;
+
+    // A generous, invisible sphere makes both the bright core and scan rings easy
+    // to acquire without making the visible hotspot oversized.
+    const target = new Mesh(
+      this.geometry(new SphereGeometry(0.72, 12, 8)),
+      this.material(new MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })),
+    );
+    const hotspot: ExhibitHotspot = { root, core, rings, available, phase: index * 1.7, hovered: false };
+    target.userData.exhibit = exhibit;
+    target.userData.hotspot = hotspot;
+    root.add(...rings, core, target);
+    this.exhibitHotspots.push(hotspot);
+    this.exhibitTargets.push(target);
+    return hotspot;
+  }
+
+  private onPointerOver(hotspot: ExhibitHotspot): void {
+    if (hotspot.hovered) return;
+    hotspot.hovered = true;
+  }
+
+  private onPointerOut(hotspot: ExhibitHotspot): void {
+    if (!hotspot.hovered) return;
+    hotspot.hovered = false;
   }
 
   private createPhysicalPlaceholder(index: number, available: boolean): Group {
@@ -278,8 +340,12 @@ export class ZoneViewer {
   }
 
   private handleExhibitClick(exhibit: ExhibitEntry): void {
-    if (this.viewMode.mode !== ViewMode.ZONE || exhibit.status !== 'available' || !exhibit.viewerId) return;
-    console.info('clicked exhibit:', exhibit.id, exhibit.viewerId);
+    if (this.viewMode.mode !== ViewMode.ZONE) return;
+    if (exhibit.status === 'coming' || !exhibit.viewerId) {
+      this.showStatusMessage(`${exhibit.previewLabel} · 即将开放`);
+      return;
+    }
+    console.info('[ZoneViewer] MVR hotspot clicked', { id: exhibit.id, viewerId: exhibit.viewerId });
 
     // ExhibitViewer accepts entries from SHOWROOM mode. Restore that owning state
     // before routing to the already registered viewer; exiting the exhibit will
@@ -295,6 +361,16 @@ export class ZoneViewer {
     this.camera.setNavigationEnabled(true);
     this.onVisibilityChange(false);
     this.onOpenExhibit(exhibit.viewerId, new Vector3(...exhibit.previewPosition));
+  }
+
+  private showStatusMessage(message: string): void {
+    this.statusMessage.textContent = message;
+    this.statusMessage.classList.add('is-visible');
+    if (this.statusMessageTimer !== null) window.clearTimeout(this.statusMessageTimer);
+    this.statusMessageTimer = window.setTimeout(() => {
+      this.statusMessage.classList.remove('is-visible');
+      this.statusMessageTimer = null;
+    }, 2200);
   }
 
   private createExhibitLabel(title: string, status: string, index: number): Mesh {
