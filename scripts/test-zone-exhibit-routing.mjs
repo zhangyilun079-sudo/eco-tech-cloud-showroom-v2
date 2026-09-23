@@ -72,6 +72,13 @@ class Group {
     if (this.name === name) return this;
     for (const child of this.children) { const found = child.getObjectByName?.(name); if (found) return found; }
   }
+  clone(recursive = true) {
+    const copy = new Group();
+    copy.name = this.name; copy.visible = this.visible; copy.userData = { ...this.userData };
+    copy.position.copy(this.position); copy.rotation.copy(this.rotation); copy.scale.copy(this.scale);
+    if (recursive) copy.add(...this.children.map((child) => child.clone(true)));
+    return copy;
+  }
 }
 const resources = [];
 class Resource {
@@ -124,7 +131,21 @@ const { zone01Exhibits: entries } = load('src/zones/data/zoneExhibits.ts', {
 const mvr = entries[0];
 const { ExhibitViewer } = load('src/exhibits/ExhibitViewer.ts', { three, '../core/ViewMode': modes });
 const { ExhibitModeMenu } = load('src/exhibits/navigation/ExhibitModeMenu.ts');
-const standModule = load('src/zones/components/ZoneExhibitStand.ts', { three });
+class FrozenMvrDouble {
+  constructor(value) {
+    this.metadata = value; this.object = new Group(); this.object.visible = false;
+    this.object.name = 'MVR wastewater treatment process plant';
+    for (const name of ['steel-support-frame', 'mvr-evaporation-unit', 'heat-exchanger-module', 'crystallization-salt-separation-unit', 'pump-system', 'piping-system', 'electrical-control-cabinet']) {
+      const component = new Group(); component.name = name; component.userData.componentId = name; this.object.add(component);
+    }
+  }
+  dispose() { this.object.clear(); }
+}
+const standModule = load('src/zones/components/ZoneExhibitStand.ts', {
+  three,
+  '../../exhibits/data/mvrWastewaterTreatment': definitionModule,
+  '../../exhibits/models/MvrWastewaterTreatmentModel': { MvrWastewaterTreatmentModel: FrozenMvrDouble },
+});
 const showcaseModule = load('src/zones/components/ZoneExhibitShowcase.ts', {
   three, './ZoneExhibitStand': standModule,
   '../../interaction/RaycastManager': { RaycastManager: RaycastDouble },
@@ -327,11 +348,25 @@ test('reordering data keeps each preview shape and availability attached to its 
   assert.deepEqual(previews(f.showcase).map((display) => display.name), [
     'Showcase preview: monitoring', 'Showcase preview: membrane', 'Showcase preview: mvr',
   ]);
-  assert.deepEqual(previews(f.showcase).map((display) => display.children.length), [3, 4, 3]);
+  assert.deepEqual(previews(f.showcase).map((display) => display.children.length), [3, 4, 1]);
   assert.equal(labels(f.showcase)[0].texts[1].color, '#9bdae2');
   assert.equal(labels(f.showcase)[2].texts[1].color, '#effeff');
   f.picker.onClick(f.showcase.targets[2]);
   assert.equal(f.selected[0], mvr);
+});
+test('MVR showcase uses a visible frozen clone of the production model structure', () => {
+  const f = showcaseFixture([mvr]);
+  const display = previews(f.showcase)[0]; const clone = display.children[0];
+  assert.equal(clone.name, 'Frozen MVR production model clone');
+  assert.equal(clone.visible, true);
+  assert.equal(clone.scale.x, 0.42);
+  assert.deepEqual(clone.children.map((component) => component.userData.componentId), [
+    'steel-support-frame', 'mvr-evaporation-unit', 'heat-exchanger-module',
+    'crystallization-salt-separation-unit', 'pump-system', 'piping-system',
+    'electrical-control-cabinet',
+  ]);
+  f.showcase.update(1);
+  assert.equal(display.rotation.y, 0, 'The zone MVR clone must remain frozen');
 });
 test('all configured placements, labels and target metadata survive extraction', () => {
   const f = showcaseFixture();
@@ -382,7 +417,8 @@ test('hover and animation persist; disabling clears the cursor and highlight', (
   assert.equal(f.canvas.classList.contains('is-zone-exhibit-hovered'), true);
   assert.ok(hotspot.scale.x > 1.2);
   assert.equal(hotspot.quaternion.copied, f.camera.quaternion);
-  assert.ok(previews(f.showcase)[0].rotation.y > 0);
+  assert.equal(previews(f.showcase)[0].rotation.y, 0, 'MVR remains frozen');
+  assert.ok(previews(f.showcase)[1].rotation.y > 0, 'Other placeholders retain their animation');
   f.setEnabled(false); f.showcase.update(0.1);
   assert.equal(f.canvas.classList.contains('is-zone-exhibit-hovered'), false);
   assert.ok(hotspot.scale.x < 1.1);

@@ -5,6 +5,8 @@ import {
   SphereGeometry, SRGBColorSpace,
 } from 'three';
 import type { Camera } from 'three';
+import { mvrWastewaterTreatmentDefinition } from '../../exhibits/data/mvrWastewaterTreatment';
+import { MvrWastewaterTreatmentModel } from '../../exhibits/models/MvrWastewaterTreatmentModel';
 import type { ExhibitEntry, ExhibitShowcaseKind } from '../data/zoneExhibits';
 
 interface StandHotspot {
@@ -24,6 +26,7 @@ export class ZoneExhibitStand {
   private readonly textures = new Set<CanvasTexture>();
   private readonly display: Group;
   private readonly hotspot: StandHotspot;
+  private frozenMvrSource: MvrWastewaterTreatmentModel | null = null;
   private disposed = false;
 
   public constructor(public readonly entry: ExhibitEntry, private readonly index: number) {
@@ -55,7 +58,8 @@ export class ZoneExhibitStand {
 
   public update(delta: number, elapsed: number, camera: Camera): void {
     if (this.disposed) return;
-    this.display.rotation.y += delta * (0.08 + this.index * 0.015);
+    // The production MVR clone is an exhibit, not an animated placeholder.
+    if (this.entry.showcaseKind !== 'mvr') this.display.rotation.y += delta * (0.08 + this.index * 0.015);
     const pulse = (Math.sin(elapsed * 2.8 + this.index * 1.7) + 1) * 0.5;
     const hoverScale = this.hotspot.hovered ? 1.34 : 1;
     this.hotspot.root.scale.setScalar(hoverScale * (0.94 + pulse * 0.1));
@@ -73,6 +77,10 @@ export class ZoneExhibitStand {
     this.disposed = true;
     this.group.removeFromParent();
     this.group.clear();
+    // The clone shares its source instance's geometry and materials. Clear the
+    // scene graph first, then let the source retain sole disposal ownership.
+    this.frozenMvrSource?.dispose();
+    this.frozenMvrSource = null;
     // These resources belong only to this stand; never dispose frozen Viewer assets.
     this.geometries.forEach((item) => item.dispose());
     this.materials.forEach((item) => item.dispose());
@@ -112,13 +120,18 @@ export class ZoneExhibitStand {
   /** The authored kind, never the array index, selects the representative preview. */
   private createPhysicalPlaceholder(kind: ExhibitShowcaseKind, available: boolean): Group {
     const display = new Group();
-    const material = this.material(new MeshStandardMaterial({ color: available ? '#a9e7e9' : '#5f8f96', emissive: available ? '#176f79' : '#163e45', emissiveIntensity: 0.32, metalness: 0.72, roughness: 0.3, transparent: !available, opacity: available ? 1 : 0.58 }));
     if (kind === 'mvr') {
-      const body = new Mesh(this.geometry(new CylinderGeometry(0.62, 0.78, 1.65, 24)), material); body.position.y = 1.05;
-      const chamber = new Mesh(this.geometry(new CylinderGeometry(0.38, 0.48, 1.95, 20)), material); chamber.position.set(0.85, 1.18, 0.12);
-      const bridge = new Mesh(this.geometry(new BoxGeometry(0.95, 0.22, 0.28)), material); bridge.position.set(0.42, 1.55, 0.05);
-      display.add(body, chamber, bridge);
-    } else if (kind === 'membrane') {
+      this.frozenMvrSource = new MvrWastewaterTreatmentModel(mvrWastewaterTreatmentDefinition);
+      const frozenClone = this.frozenMvrSource.object.clone(true);
+      frozenClone.name = 'Frozen MVR production model clone';
+      frozenClone.visible = true;
+      frozenClone.scale.setScalar(0.42);
+      display.add(frozenClone);
+      return display;
+    }
+
+    const material = this.material(new MeshStandardMaterial({ color: available ? '#a9e7e9' : '#5f8f96', emissive: available ? '#176f79' : '#163e45', emissiveIntensity: 0.32, metalness: 0.72, roughness: 0.3, transparent: !available, opacity: available ? 1 : 0.58 }));
+    if (kind === 'membrane') {
       for (const x of [-0.68, 0, 0.68]) {
         const membrane = new Mesh(this.geometry(new CylinderGeometry(0.18, 0.18, 1.65, 16)), material); membrane.position.set(x, 1.18, 0); display.add(membrane);
       }
