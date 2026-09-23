@@ -1,7 +1,7 @@
 import { Clock, Color, Fog, Scene } from 'three';
 import { ExhibitRegistry } from '../exhibits/ExhibitRegistry';
 import { ExhibitShowcase } from '../exhibits/ExhibitShowcase';
-import { ExhibitViewer } from '../exhibits/ExhibitViewer';
+import { ExhibitViewer, type ExhibitReturnMode } from '../exhibits/ExhibitViewer';
 import { ExplosionController } from '../exhibits/explosion/ExplosionController';
 import { ComponentInteractionManager } from '../exhibits/components/ComponentInteractionManager';
 import { mvrWastewaterTreatmentDefinition } from '../exhibits/data/mvrWastewaterTreatment';
@@ -102,12 +102,15 @@ export class ShowroomApplication {
         }
         // Prepare first; ZoneViewer changes modes only after resolution succeeds.
         return () => {
-          this.exhibitViewer.enter(exhibit, position);
+          const origin = this.zoneViewer.exhibitReturnContext;
+          if (!origin || !this.exhibitViewer.enter(exhibit, position, origin.showroomCameraState)) return false;
           this.hotspots.setEnabled(false);
           this.componentInteractions.activate(exhibit);
           this.modeMenu.setMode(null);
           this.modeMenu.setExploded(false);
+          this.modeMenu.setReturnZone(origin.title);
           this.modeMenu.show();
+          return true;
         };
       },
     );
@@ -120,13 +123,21 @@ export class ShowroomApplication {
       this.viewMode,
       this.infoPanel,
       this.exhibitShowcase,
-      (active) => {
-        this.showroom.group.visible = !active;
+      (active, returnMode) => {
+        this.showroom.group.visible = !active && returnMode !== ViewMode.ZONE;
+        this.hotspots?.setEnabled(false);
         if (active) this.infoPanel.setViewMode(ViewMode.EXHIBIT);
+        else if (returnMode === ViewMode.ZONE) this.zoneViewer.showReturnEnvironment();
       },
-      () => {
-        this.hotspots.setEnabled(true);
-        this.infoPanel.setViewMode(ViewMode.SHOWROOM);
+      (returnMode) => {
+        this.modeMenu.setReturnZone(null);
+        if (returnMode === ViewMode.ZONE) {
+          this.zoneViewer.resumeFromExhibit();
+        } else {
+          this.zoneViewer.discardExhibitReturn();
+          this.hotspots.setEnabled(true);
+          this.infoPanel.setViewMode(ViewMode.SHOWROOM);
+        }
       },
     );
     this.hotspots = new HotspotManager(
@@ -207,7 +218,10 @@ export class ShowroomApplication {
     this.animationFrameId = requestAnimationFrame(this.animate);
   };
 
-  private exitExhibitMode(): void {
+  private exitExhibitMode(destination: ExhibitReturnMode = ViewMode.SHOWROOM): void {
+    if (!this.exhibitViewer.canExit) return;
+    const origin = this.zoneViewer.exhibitReturnContext;
+    if (destination === ViewMode.ZONE && !origin) return;
     this.technologyController.exit();
     this.processController.exit();
     this.explosionController.collapse(0);
@@ -215,7 +229,9 @@ export class ShowroomApplication {
     this.componentInteractions.deactivate();
     this.resourceManager.cleanupAll();
     this.modeMenu.hide();
-    this.exhibitViewer.exit();
+    this.exhibitViewer.exit(destination === ViewMode.ZONE && origin
+      ? { mode: ViewMode.ZONE, cameraState: origin.cameraState }
+      : undefined);
   }
 
   private toggleExplodedView(): void {
@@ -246,8 +262,9 @@ export class ShowroomApplication {
   }
 
   private selectExhibitMode(mode: ExhibitNavigationMode): void {
-    if (mode === 'return') {
-      this.exitExhibitMode();
+    if (!this.exhibitViewer.canExit) return;
+    if (mode === 'return' || mode === 'return-zone') {
+      this.exitExhibitMode(mode === 'return-zone' ? ViewMode.ZONE : ViewMode.SHOWROOM);
       return;
     }
     if (mode === 'exploded' && this.viewMode.mode === ViewMode.EXPLODED) {
