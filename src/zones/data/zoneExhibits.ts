@@ -1,4 +1,5 @@
 import type { Vector3Tuple } from 'three';
+import { mvrWastewaterTreatmentDefinition } from '../../exhibits/data/mvrWastewaterTreatment';
 import type { ShowroomZoneId } from '../../showroom/Showroom';
 
 export type ExhibitStatus = 'available' | 'coming';
@@ -29,7 +30,7 @@ export const zone01Exhibits: readonly ExhibitEntry[] = [
     description: '通过MVR蒸发浓缩、分盐与回收利用，实现高盐有机废水的减量化和资源化。',
     status: 'available',
     previewType: 'interactive',
-    viewerId: 'mvr',
+    viewerId: mvrWastewaterTreatmentDefinition.id,
     previewPosition: [-7.2, 0, -42],
     previewLabel: '高盐有机废水 MVR',
   },

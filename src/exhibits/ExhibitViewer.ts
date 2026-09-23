@@ -15,6 +15,13 @@ interface Transition {
   readonly onComplete?: () => void;
 }
 
+export type ExhibitReturnMode = typeof ViewMode.SHOWROOM | typeof ViewMode.ZONE;
+
+export interface ExhibitReturnTarget {
+  readonly mode: ExhibitReturnMode;
+  readonly cameraState: CameraState;
+}
+
 export class ExhibitViewer {
   private activeExhibit: Exhibit | null = null;
   private showroomCameraState: CameraState | null = null;
@@ -30,8 +37,8 @@ export class ExhibitViewer {
     private readonly viewMode: ViewModeState,
     private readonly infoPanel: InfoPanel,
     private readonly showcase: ExhibitShowcase,
-    private readonly onExhibitModeChange: (active: boolean) => void,
-    private readonly onReturnToShowroom: () => void,
+    private readonly onExhibitModeChange: (active: boolean, returnMode?: ExhibitReturnMode) => void,
+    private readonly onReturn: (mode: ExhibitReturnMode) => void,
   ) {
     canvas.addEventListener('pointerdown', this.handlePointerDown);
     canvas.addEventListener('pointermove', this.handlePointerMove);
@@ -40,11 +47,15 @@ export class ExhibitViewer {
     canvas.addEventListener('wheel', this.handleWheel, { passive: false });
   }
 
-  public enter(exhibit: Exhibit, position: Vector3): void {
-    if (this.viewMode.mode !== ViewMode.SHOWROOM) return;
+  public enter(exhibit: Exhibit, position: Vector3, showroomState?: CameraState): boolean {
+    if ((this.viewMode.mode !== ViewMode.SHOWROOM && this.viewMode.mode !== ViewMode.ZONE)
+      || this.transition || this.activeExhibit) return false;
+    // A zone entry must supply its saved main-hall view for the separate hall button.
+    if (this.viewMode.mode === ViewMode.ZONE && !showroomState) return false;
 
+    const mainView = showroomState ?? this.cameraController.captureState();
+    this.showroomCameraState = { position: mainView.position.clone(), target: mainView.target.clone() };
     this.viewMode.set(ViewMode.EXHIBIT);
-    this.showroomCameraState = this.cameraController.captureState();
     this.cameraController.setNavigationEnabled(false);
     this.activeExhibit = exhibit;
     this.onExhibitModeChange(true);
@@ -62,24 +73,36 @@ export class ExhibitViewer {
     this.beginTransition(destination);
     this.infoPanel.showExhibit(exhibit.metadata);
     this.canvas.classList.add('is-exhibit-mode');
+    return true;
   }
 
-  public exit(): void {
-    if ((this.viewMode.mode !== ViewMode.EXHIBIT && this.viewMode.mode !== ViewMode.EXPLODED && this.viewMode.mode !== ViewMode.PROCESS && this.viewMode.mode !== ViewMode.TECHNOLOGY)
-      || !this.showroomCameraState) return;
+  public get canExit(): boolean {
+    return this.activeExhibit !== null && this.showroomCameraState !== null && this.transition === null
+      && (this.viewMode.mode === ViewMode.EXHIBIT || this.viewMode.mode === ViewMode.EXPLODED
+        || this.viewMode.mode === ViewMode.PROCESS || this.viewMode.mode === ViewMode.TECHNOLOGY);
+  }
+
+  public exit(returnTarget?: ExhibitReturnTarget): boolean {
+    if (!this.canExit || !this.showroomCameraState) return false;
+    const destination = returnTarget ?? { mode: ViewMode.SHOWROOM, cameraState: this.showroomCameraState };
+    if (this.pointerId !== null && this.canvas.hasPointerCapture(this.pointerId)) {
+      this.canvas.releasePointerCapture(this.pointerId);
+    }
     this.pointerId = null;
-    this.onExhibitModeChange(false);
-    this.beginTransition(this.showroomCameraState, () => {
+    this.onExhibitModeChange(false, destination.mode);
+    this.beginTransition(destination.cameraState, () => {
       if (this.activeExhibit) this.activeExhibit.object.visible = false;
       this.showcase.hide();
       this.activeExhibit = null;
       this.showroomCameraState = null;
-      this.viewMode.set(ViewMode.SHOWROOM);
-      this.cameraController.setNavigationEnabled(true);
-      this.onReturnToShowroom();
+      this.viewMode.set(destination.mode);
+      // Zone views must not be clamped by the main-hall OrbitControls bounds.
+      this.cameraController.setNavigationEnabled(destination.mode === ViewMode.SHOWROOM);
+      this.onReturn(destination.mode);
     });
     this.infoPanel.hideExhibit();
     this.canvas.classList.remove('is-exhibit-mode');
+    return true;
   }
 
   public update(deltaSeconds: number): void {
