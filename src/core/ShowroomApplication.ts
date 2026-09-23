@@ -96,7 +96,19 @@ export class ShowroomApplication {
       () => this.hotspots.setEnabled(true),
       (viewerId, position) => {
         const exhibit = this.exhibits.get(viewerId);
-        if (exhibit) this.exhibitViewer.enter(exhibit, position);
+        if (!exhibit) {
+          console.error('[ShowroomApplication] Unregistered zone exhibit', { viewerId });
+          return null;
+        }
+        // Prepare first; ZoneViewer changes modes only after resolution succeeds.
+        return () => {
+          this.exhibitViewer.enter(exhibit, position);
+          this.hotspots.setEnabled(false);
+          this.componentInteractions.activate(exhibit);
+          this.modeMenu.setMode(null);
+          this.modeMenu.setExploded(false);
+          this.modeMenu.show();
+        };
       },
     );
     this.resourceManager.registerCleanup('explosion', () => this.explosionController.cleanupAnimation());
