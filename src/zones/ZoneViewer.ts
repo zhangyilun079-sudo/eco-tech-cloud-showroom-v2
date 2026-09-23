@@ -53,7 +53,7 @@ export class ZoneViewer {
     private readonly viewMode: ViewModeState,
     private readonly onVisibilityChange: (zoneActive: boolean) => void,
     private readonly onReturn: () => void,
-    private readonly onOpenExhibit: (viewerId: string, position: Vector3) => void,
+    private readonly prepareExhibit: (viewerId: string, position: Vector3) => (() => void) | null,
   ) {
     this.group.name = 'ZONE_01 water intelligence center';
     this.group.visible = false;
@@ -340,12 +340,19 @@ export class ZoneViewer {
   }
 
   private handleExhibitClick(exhibit: ExhibitEntry): void {
-    if (this.viewMode.mode !== ViewMode.ZONE) return;
+    if (this.viewMode.mode !== ViewMode.ZONE || this.transition) return;
     if (exhibit.status === 'coming' || !exhibit.viewerId) {
       this.showStatusMessage(`${exhibit.previewLabel} · 即将开放`);
       return;
     }
-    console.info('[ZoneViewer] MVR hotspot clicked', { id: exhibit.id, viewerId: exhibit.viewerId });
+    // Resolve the registered exhibit before changing any camera, visibility or
+    // navigation state. A stale viewerId must leave the visitor inside the zone.
+    const openExhibit = this.prepareExhibit(exhibit.viewerId, new Vector3(...exhibit.previewPosition));
+    if (!openExhibit) {
+      this.showStatusMessage(`${exhibit.previewLabel} · 展品尚未接入，请稍后重试`);
+      return;
+    }
+    console.info('[ZoneViewer] exhibit hotspot clicked', { id: exhibit.id, viewerId: exhibit.viewerId });
 
     // ExhibitViewer accepts entries from SHOWROOM mode. Restore that owning state
     // before routing to the already registered viewer; exiting the exhibit will
@@ -360,7 +367,7 @@ export class ZoneViewer {
     this.viewMode.set(ViewMode.SHOWROOM);
     this.camera.setNavigationEnabled(true);
     this.onVisibilityChange(false);
-    this.onOpenExhibit(exhibit.viewerId, new Vector3(...exhibit.previewPosition));
+    openExhibit();
   }
 
   private showStatusMessage(message: string): void {
