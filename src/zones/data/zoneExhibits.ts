@@ -4,7 +4,7 @@ import type { ShowroomZoneId } from '../../showroom/Showroom';
 export type ExhibitStatus = 'available' | 'coming';
 export type ExhibitPreviewType = 'interactive' | 'holographic';
 
-/** Catalog entry shared by zone directories and exhibit-viewer routing. */
+/** Catalog entry shared by zone exhibit spaces and exhibit-viewer routing. */
 export interface ExhibitEntry {
   readonly id: string;
   readonly zoneId: ShowroomZoneId;
@@ -14,9 +14,9 @@ export interface ExhibitEntry {
   readonly status: ExhibitStatus;
   readonly previewType: ExhibitPreviewType;
   readonly viewerId: string | null;
-  /** Authored placement for the lightweight zone-directory projection. */
+  /** Authored placement for the lightweight physical showcase. */
   readonly previewPosition: Vector3Tuple;
-  /** Short label used by the existing in-scene projection. */
+  /** Short label used by the in-scene exhibit signage. */
   readonly previewLabel: string;
 }
 

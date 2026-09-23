@@ -21,8 +21,8 @@ export class ZoneViewer {
   private readonly materials: Material[] = [];
   private readonly textures: CanvasTexture[] = [];
   private readonly circulationRings: Group[] = [];
-  private readonly exhibitPreviews: Group[] = [];
-  private readonly exhibitDirectory = new Group();
+  private readonly exhibitDisplays: Group[] = [];
+  private readonly exhibitSpace = new Group();
   private readonly waterParticles: Points;
   private readonly panel: HTMLElement;
   private readonly title: HTMLElement;
@@ -49,7 +49,7 @@ export class ZoneViewer {
     this.panel = document.createElement('section');
     this.panel.className = 'zone-viewer-panel';
     this.panel.setAttribute('aria-hidden', 'true');
-    this.panel.innerHTML = `<p class="zone-viewer-kicker">ZONE_01 · WATER INTELLIGENCE CENTER</p><h1></h1><p class="zone-viewer-subtitle"></p><p class="zone-viewer-description"></p><div class="zone-live-status"><span>水质监测在线</span><span>循环系统稳定</span></div><section class="zone-exhibit-directory" aria-label="水环境技术展品目录"><p>EXHIBIT DIRECTORY · 展品目录</p><ol></ol></section><button class="zone-return" type="button">← 返回主展厅</button>`;
+    this.panel.innerHTML = `<p class="zone-viewer-kicker">ZONE_01 · WATER INTELLIGENCE CENTER</p><h1></h1><p class="zone-viewer-subtitle"></p><p class="zone-viewer-description"></p><div class="zone-live-status"><span>水质监测在线</span><span>循环系统稳定</span></div><p class="zone-explore-hint">探索空间中的展项热点</p><button class="zone-return" type="button">← 返回主展厅</button>`;
     container.append(this.panel);
     this.title = this.required('h1');
     this.subtitle = this.required('.zone-viewer-subtitle');
@@ -89,8 +89,7 @@ export class ZoneViewer {
       exhibitCount: definition.exhibits.length,
       exhibits: definition.exhibits,
     });
-    this.renderDirectory(definition);
-    this.renderExhibitDirectory(definition);
+    this.renderExhibitSpace(definition);
     this.panel.classList.add('is-visible');
     this.panel.setAttribute('aria-hidden', 'false');
 
@@ -127,9 +126,8 @@ export class ZoneViewer {
         ring.rotation.z += delta * (index % 2 === 0 ? 0.16 : -0.11);
         ring.position.y = 3.1 + Math.sin(this.elapsed * 0.7 + index) * 0.12;
       });
-      this.exhibitPreviews.forEach((preview, index) => {
-        preview.rotation.y += delta * (0.24 + index * 0.04);
-        preview.position.y = 2.35 + Math.sin(this.elapsed * 1.1 + index * 0.8) * 0.12;
+      this.exhibitDisplays.forEach((display, index) => {
+        display.rotation.y += delta * (0.08 + index * 0.015);
       });
       this.waterParticles.rotation.y += delta * 0.055;
       this.waterParticles.position.y = Math.sin(this.elapsed * 0.55) * 0.08;
@@ -188,7 +186,7 @@ export class ZoneViewer {
 
     this.createMonitoringWall(new Vector3(8.8, 4.3, -48.5), -0.2);
     this.createMonitoringWall(new Vector3(-8.8, 4.3, -48.5), 0.2);
-    this.group.add(this.exhibitDirectory);
+    this.group.add(this.exhibitSpace);
 
     const positions: number[] = [];
     for (let i = 0; i < 620; i += 1) {
@@ -225,57 +223,58 @@ export class ZoneViewer {
     base.position.set(position.x, 0.12, position.z + 1); this.group.add(base);
   }
 
-  private renderDirectory(definition: ZoneDefinition): void {
-    const list = this.panel.querySelector<HTMLOListElement>('.zone-exhibit-directory ol');
-    if (!list) return;
-    list.replaceChildren(...definition.exhibits.map((exhibit, index) => {
-      const item = document.createElement('li');
-      item.className = exhibit.status === 'available' ? 'is-connected' : 'is-placeholder';
-      item.innerHTML = `<span>${String(index + 1).padStart(2, '0')}</span><div><strong>${exhibit.name}</strong><small>${exhibit.status === 'available' ? 'CONNECTED · 已接入现有 MVR 展项' : 'PLANNED · 展项预留'}</small></div>`;
-      if (exhibit.status === 'available' && exhibit.viewerId) {
-        item.tabIndex = 0;
-        item.setAttribute('role', 'button');
-        item.addEventListener('click', () => this.handleExhibitClick(exhibit));
-        item.addEventListener('keydown', (event) => {
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            this.handleExhibitClick(exhibit);
-          }
-        });
-      }
-      return item;
-    }));
-  }
-
-  /** Lightweight projections mirror the active definition; they are never physical equipment. */
-  private renderExhibitDirectory(definition: ZoneDefinition): void {
-    this.exhibitDirectory.clear();
-    this.exhibitPreviews.length = 0;
+  /** Builds lightweight physical displays; full exhibit models stay exclusively in ExhibitViewer. */
+  private renderExhibitSpace(definition: ZoneDefinition): void {
+    this.exhibitSpace.clear();
+    this.exhibitDisplays.length = 0;
     this.exhibitTargets.length = 0;
     definition.exhibits.forEach((exhibit, index) => {
-      const marker = new Group(); marker.name = `Digital exhibit entrance ${index + 1}`;
+      const marker = new Group(); marker.name = `Exhibit showcase ${index + 1}`;
       marker.position.set(...exhibit.previewPosition);
-      const pad = new Mesh(this.geometry(new RingGeometry(1.35, 1.47, 64)), this.material(new MeshBasicMaterial({ color: index === 0 ? '#b8fbff' : '#43cfe5', transparent: true, opacity: index === 0 ? 0.85 : 0.42, side: DoubleSide })));
-      pad.rotation.x = -Math.PI / 2; pad.position.y = 0.055;
-      const beam = new Mesh(this.geometry(new CylinderGeometry(0.82, 1.15, 3.6, 32, 1, true)), this.material(new MeshBasicMaterial({ color: '#4de4f4', transparent: true, opacity: 0.055, side: DoubleSide, depthWrite: false })));
-      beam.position.y = 1.8;
-      const preview = new Group(); preview.position.y = 2.35;
-      const core = new Mesh(this.geometry(new OctahedronGeometry(index === 0 ? 0.72 : 0.58, 1)), this.material(new MeshBasicMaterial({ color: index === 0 ? '#d3fdff' : '#61d9e9', wireframe: true, transparent: true, opacity: index === 0 ? 0.9 : 0.5 })));
-      const orbit = new Mesh(this.geometry(new TorusGeometry(1.02, 0.025, 6, 56)), this.material(new MeshBasicMaterial({ color: '#83eff9', transparent: true, opacity: 0.62 })));
-      orbit.rotation.x = Math.PI / 2; preview.add(core, orbit); this.exhibitPreviews.push(preview);
-      marker.add(pad, beam, preview, this.createExhibitLabel(
+      const available = exhibit.status === 'available' && exhibit.viewerId !== null;
+      const plinth = new Mesh(this.geometry(new CylinderGeometry(1.6, 1.85, 0.42, 48)), this.material(new MeshPhysicalMaterial({ color: available ? '#176b7b' : '#124754', emissive: available ? '#0a7890' : '#073d49', emissiveIntensity: 0.42, metalness: 0.65, roughness: 0.28, clearcoat: 0.7 })));
+      plinth.position.y = 0.21;
+      const display = this.createPhysicalPlaceholder(index, available);
+      display.position.y = 0.42;
+      this.exhibitDisplays.push(display);
+      const hotspot = new Mesh(this.geometry(new RingGeometry(0.28, 0.48, 40)), this.material(new MeshBasicMaterial({ color: available ? '#d6fdff' : '#5fcbd8', transparent: true, opacity: available ? 0.95 : 0.48, side: DoubleSide, depthWrite: false })));
+      hotspot.position.set(0, 2.95, 0); hotspot.rotation.x = -Math.PI / 2;
+      const hotspotCore = new Mesh(this.geometry(new OctahedronGeometry(0.2, 0)), this.material(new MeshBasicMaterial({ color: available ? '#ffffff' : '#70d3df', transparent: true, opacity: available ? 0.96 : 0.55 })));
+      hotspotCore.position.y = 2.95;
+      marker.add(plinth, display, hotspot, hotspotCore, this.createExhibitLabel(
         exhibit.previewLabel,
-        exhibit.status === 'available' ? 'CONNECTED' : 'PLANNED',
+        available ? '点击热点进入展项' : '展项预留',
         index,
       ));
-      if (exhibit.status === 'available' && exhibit.viewerId) {
-        for (const target of [pad, beam, core, orbit]) {
+      if (available) {
+        for (const target of [hotspot, hotspotCore]) {
           target.userData.exhibit = exhibit;
           this.exhibitTargets.push(target);
         }
       }
-      this.exhibitDirectory.add(marker);
+      this.exhibitSpace.add(marker);
     });
+  }
+
+  private createPhysicalPlaceholder(index: number, available: boolean): Group {
+    const display = new Group();
+    const material = this.material(new MeshStandardMaterial({ color: available ? '#a9e7e9' : '#5f8f96', emissive: available ? '#176f79' : '#163e45', emissiveIntensity: 0.32, metalness: 0.72, roughness: 0.3, transparent: !available, opacity: available ? 1 : 0.58 }));
+    if (index === 0) {
+      const body = new Mesh(this.geometry(new CylinderGeometry(0.62, 0.78, 1.65, 24)), material); body.position.y = 1.05;
+      const chamber = new Mesh(this.geometry(new CylinderGeometry(0.38, 0.48, 1.95, 20)), material); chamber.position.set(0.85, 1.18, 0.12);
+      const bridge = new Mesh(this.geometry(new BoxGeometry(0.95, 0.22, 0.28)), material); bridge.position.set(0.42, 1.55, 0.05);
+      display.add(body, chamber, bridge);
+    } else if (index === 1) {
+      for (const x of [-0.68, 0, 0.68]) {
+        const membrane = new Mesh(this.geometry(new CylinderGeometry(0.18, 0.18, 1.65, 16)), material); membrane.position.set(x, 1.18, 0); display.add(membrane);
+      }
+      const header = new Mesh(this.geometry(new BoxGeometry(1.75, 0.18, 0.34)), material); header.position.set(0, 1.95, 0); display.add(header);
+    } else {
+      const consoleBody = new Mesh(this.geometry(new BoxGeometry(1.65, 1.15, 0.52)), material); consoleBody.position.y = 1.05; consoleBody.rotation.x = -0.12;
+      const sensor = new Mesh(this.geometry(new CylinderGeometry(0.08, 0.08, 1.15, 12)), material); sensor.position.set(0.72, 2, 0);
+      const sensorHead = new Mesh(this.geometry(new OctahedronGeometry(0.25, 0)), material); sensorHead.position.set(0.72, 2.58, 0); display.add(consoleBody, sensor, sensorHead);
+    }
+    return display;
   }
 
   private handleExhibitClick(exhibit: ExhibitEntry): void {
@@ -304,9 +303,9 @@ export class ZoneViewer {
     if (!context) throw new Error('Exhibit label canvas is unavailable.');
     context.fillStyle = 'rgba(3,31,43,.82)'; context.fillRect(0, 0, 720, 180);
     context.strokeStyle = index === 0 ? 'rgba(150,249,255,.85)' : 'rgba(83,210,229,.48)'; context.lineWidth = 3; context.strokeRect(3, 3, 714, 174);
-    context.fillStyle = '#8beefa'; context.font = '500 22px sans-serif'; context.fillText(`0${index + 1}  ${status}`, 30, 43);
+    context.fillStyle = '#8beefa'; context.font = '500 22px sans-serif'; context.fillText(`展项 0${index + 1}`, 30, 43);
     context.fillStyle = index === 0 ? '#effeff' : '#9bdae2'; context.font = '500 29px sans-serif'; context.fillText(title, 30, 102);
-    context.fillStyle = '#54bdcc'; context.font = '18px sans-serif'; context.fillText(index === 0 ? 'DIGITAL ENTRANCE · ONLINE' : 'HOLOGRAPHIC PREVIEW · RESERVED', 30, 145);
+    context.fillStyle = '#54bdcc'; context.font = '18px sans-serif'; context.fillText(status, 30, 145);
     const texture = new CanvasTexture(canvas); texture.colorSpace = SRGBColorSpace; this.textures.push(texture);
     const label = new Mesh(this.geometry(new PlaneGeometry(5.4, 1.35)), this.material(new MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false })));
     label.position.set(0, 1.1, 1.5); return label;
