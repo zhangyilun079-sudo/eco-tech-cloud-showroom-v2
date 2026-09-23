@@ -5,7 +5,7 @@ export const zoneDefinitions: readonly ZoneDefinition[] = [
   {
     id: 'ZONE_01', title: '水环境治理', englishTitle: 'WATER ENVIRONMENT',
     description: '汇聚水处理、资源循环与智慧水务技术', accent: '#39ddeb',
-    sceneOrigin: [0, 0, -42], entryPosition: [9.25, 3, -18.7], entryDirection: [0.15, 0, -1], cameraTarget: [0, 2.8, -43.5],
+    sceneOrigin: [0, 0, -42], entryPosition: [11.3, 3.8, -19.25], entryDirection: [0.3, -0.08, -0.95], cameraTarget: [-6.3, 2.35, -42],
     exhibits: zone01Exhibits,
   },
   { id: 'ZONE_02', title: '固废资源化利用', englishTitle: 'RESOURCE CIRCULATION', description: '固废资源化与循环材料技术', accent: '#58e59a', sceneOrigin: [42, 0, -42], entryPosition: [42, 3.1, -18.2], entryDirection: [0, 0, -1], cameraTarget: [42, 2, -42], exhibits: [] },

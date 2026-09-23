@@ -14,6 +14,7 @@ interface StandHotspot {
   readonly core: Mesh<SphereGeometry, MeshStandardMaterial>;
   readonly rings: readonly Mesh<RingGeometry, MeshBasicMaterial>[];
   readonly target: Mesh;
+  readonly prompt: Mesh<PlaneGeometry, MeshBasicMaterial>;
   hovered: boolean;
 }
 
@@ -47,7 +48,8 @@ export class ZoneExhibitStand {
       this.hotspot = this.createHotspot(available);
       this.target = this.hotspot.target;
       this.group.add(plinth, this.display, this.hotspot.root, this.createLabel(available));
-      if (isZone01Mvr) this.group.add(this.createMvrLighting());
+      if (isZone01Mvr) this.group.add(this.createIndustrialPlatform(), this.createMvrLighting());
+      if (!available) this.group.scale.setScalar(0.82);
     } catch (error) {
       // A failed label/mesh creation must not strand resources during a rebuild.
       this.dispose();
@@ -64,15 +66,19 @@ export class ZoneExhibitStand {
     // The production MVR clone is an exhibit, not an animated placeholder.
     if (this.entry.showcaseKind !== 'mvr') this.display.rotation.y += delta * (0.08 + this.index * 0.015);
     const pulse = (Math.sin(elapsed * 2.8 + this.index * 1.7) + 1) * 0.5;
+    const available = this.entry.status === 'available' && Boolean(this.entry.viewerId);
     const hoverScale = this.hotspot.hovered ? 1.34 : 1;
     this.hotspot.root.scale.setScalar(hoverScale * (0.94 + pulse * 0.1));
     this.hotspot.root.quaternion.copy(camera.quaternion);
     this.hotspot.rings[0].rotation.z += delta * 0.75;
     this.hotspot.rings[1].rotation.z -= delta * 0.48;
     this.hotspot.rings.forEach((ring, index) => {
-      ring.material.opacity = Math.min(1, (this.hotspot.hovered ? 0.96 : 0.48) + pulse * (index === 0 ? 0.18 : 0.1));
+      const idleOpacity = available ? 0.48 : 0.14;
+      ring.material.opacity = Math.min(1, (this.hotspot.hovered ? (available ? 0.96 : 0.38) : idleOpacity) + pulse * (index === 0 ? 0.18 : 0.1));
+      if (index === 1) ring.scale.setScalar(1 + ((elapsed * 0.42 + this.index * 0.2) % 1) * 0.55);
     });
-    this.hotspot.core.material.emissiveIntensity = (this.hotspot.hovered ? 3.2 : 1.65) + pulse * 0.75;
+    this.hotspot.core.material.emissiveIntensity = (available ? (this.hotspot.hovered ? 3.2 : 1.65) : 0.5) + pulse * (available ? 0.75 : 0.18);
+    this.hotspot.prompt.material.opacity += ((this.hotspot.hovered ? 0.96 : 0) - this.hotspot.prompt.material.opacity) * Math.min(1, delta * 12);
   }
 
   public dispose(): void {
@@ -116,8 +122,25 @@ export class ZoneExhibitStand {
     );
     target.name = `Exhibit hit target: ${this.entry.id}`;
     target.userData.exhibit = this.entry;
-    root.add(...rings, core, target);
-    return { root, core, rings, target, hovered: false };
+    const prompt = this.createHotspotPrompt(available);
+    prompt.position.set(0, -0.78, 0);
+    root.add(...rings, core, target, prompt);
+    return { root, core, rings, target, prompt, hovered: false };
+  }
+
+  private createHotspotPrompt(available: boolean): Mesh<PlaneGeometry, MeshBasicMaterial> {
+    const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 96;
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Exhibit hotspot prompt canvas is unavailable.');
+    context.fillStyle = 'rgba(2,24,33,.92)'; context.fillRect(0, 0, 512, 96);
+    context.strokeStyle = available ? '#75eff8' : '#477d84'; context.lineWidth = 2; context.strokeRect(2, 2, 508, 92);
+    context.fillStyle = available ? '#e8fdff' : '#7fa4a8'; context.font = '500 25px sans-serif'; context.textAlign = 'center';
+    context.fillText(available ? '查看技术详情  →' : '技术展项预留', 256, 59);
+    const texture = new CanvasTexture(canvas); texture.colorSpace = SRGBColorSpace; this.textures.add(texture);
+    return new Mesh(
+      this.geometry(new PlaneGeometry(2.9, 0.54)),
+      this.material(new MeshBasicMaterial({ map: texture, transparent: true, opacity: 0, depthWrite: false })),
+    );
   }
 
   /** The authored kind, never the array index, selects the representative preview. */
@@ -154,16 +177,17 @@ export class ZoneExhibitStand {
   }
 
   private createLabel(available: boolean): Mesh {
+    const isZone01Mvr = this.entry.zoneId === 'ZONE_01' && this.entry.showcaseKind === 'mvr';
     const canvas = document.createElement('canvas'); canvas.width = 720; canvas.height = 180;
     const context = canvas.getContext('2d');
     if (!context) throw new Error('Exhibit label canvas is unavailable.');
     context.fillStyle = 'rgba(3,31,43,.82)'; context.fillRect(0, 0, 720, 180);
     context.strokeStyle = available ? 'rgba(150,249,255,.85)' : 'rgba(83,210,229,.48)'; context.lineWidth = 3; context.strokeRect(3, 3, 714, 174);
-    context.fillStyle = '#8beefa'; context.font = '500 22px sans-serif'; context.fillText(`展项 ${String(this.index + 1).padStart(2, '0')}`, 30, 43);
+    const equipmentCode = isZone01Mvr ? 'EQUIPMENT NO.  MVR-01' : `展项 ${String(this.index + 1).padStart(2, '0')}`;
+    context.fillStyle = available ? '#8beefa' : '#4e8991'; context.font = '500 22px sans-serif'; context.fillText(equipmentCode, 30, 43);
     context.fillStyle = available ? '#effeff' : '#9bdae2'; context.font = '500 29px sans-serif'; context.fillText(this.entry.previewLabel, 30, 102);
     context.fillStyle = '#54bdcc'; context.font = '18px sans-serif'; context.fillText(available ? '点击热点进入展项' : '展项预留', 30, 145);
     const texture = new CanvasTexture(canvas); texture.colorSpace = SRGBColorSpace; this.textures.add(texture);
-    const isZone01Mvr = this.entry.zoneId === 'ZONE_01' && this.entry.showcaseKind === 'mvr';
     const label = new Mesh(this.geometry(new PlaneGeometry(isZone01Mvr ? 4.6 : 5.4, isZone01Mvr ? 1.15 : 1.35)), this.material(new MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false })));
     // The MVR sign sits low and forward, leaving the complete equipment body unobscured.
     label.position.set(0, isZone01Mvr ? 0.72 : 1.1, isZone01Mvr ? 2.75 : 1.5); return label;
@@ -182,7 +206,27 @@ export class ZoneExhibitStand {
     cyanRim.name = 'MVR cyan edge light';
     cyanRim.position.set(-3.1, 2.8, -1.8);
 
-    lighting.add(topLight, topLight.target, cyanRim);
+    const tealFill = new PointLight('#35ffc6', 34, 8, 1.6);
+    tealFill.name = 'MVR teal platform light';
+    tealFill.position.set(3, 1.25, 1.6);
+
+    lighting.add(topLight, topLight.target, cyanRim, tealFill);
     return lighting;
+  }
+
+  private createIndustrialPlatform(): Group {
+    const platform = new Group(); platform.name = 'MVR steel exhibition platform';
+    const steel = this.material(new MeshStandardMaterial({ color: '#18343d', emissive: '#071d24', emissiveIntensity: 0.45, metalness: 0.88, roughness: 0.26 }));
+    const edge = this.material(new MeshStandardMaterial({ color: '#67f4e4', emissive: '#16c8c1', emissiveIntensity: 2.1, metalness: 0.55, roughness: 0.18 }));
+    const deck = new Mesh(this.geometry(new BoxGeometry(4.8, 0.18, 4.2)), steel); deck.position.y = 0.43;
+    const rails = [[0, 0.57, -2.02, 4.85, 0.07, 0.07], [0, 0.57, 2.02, 4.85, 0.07, 0.07], [-2.32, 0.57, 0, 0.07, 0.07, 4.1], [2.32, 0.57, 0, 0.07, 0.07, 4.1]] as const;
+    platform.add(deck);
+    rails.forEach(([x, y, z, width, height, depth]) => {
+      const rail = new Mesh(this.geometry(new BoxGeometry(width, height, depth)), edge); rail.position.set(x, y, z); platform.add(rail);
+    });
+    for (const x of [-2.05, 2.05]) for (const z of [-1.75, 1.75]) {
+      const foot = new Mesh(this.geometry(new BoxGeometry(0.22, 0.5, 0.22)), steel); foot.position.set(x, 0.25, z); platform.add(foot);
+    }
+    return platform;
   }
 }
