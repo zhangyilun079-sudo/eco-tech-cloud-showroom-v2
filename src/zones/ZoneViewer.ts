@@ -1,26 +1,18 @@
 import {
   AdditiveBlending, BoxGeometry, BufferGeometry, CanvasTexture, Color, CylinderGeometry,
   DoubleSide, Float32BufferAttribute, Group, Material, Mesh, MeshBasicMaterial,
-  MeshPhysicalMaterial, MeshStandardMaterial, OctahedronGeometry, PlaneGeometry, PointLight, Points,
-  PointsMaterial, RingGeometry, SphereGeometry, SRGBColorSpace, TorusGeometry, Vector3,
+  MeshPhysicalMaterial, MeshStandardMaterial, PlaneGeometry, PointLight, Points,
+  PointsMaterial, RingGeometry, SRGBColorSpace, TorusGeometry, Vector3,
 } from 'three';
 import type { CameraController, CameraState } from '../core/CameraController';
-import { RaycastManager } from '../interaction/RaycastManager';
 import { ViewMode, type ViewModeState } from '../core/ViewMode';
 import type { ZoneDefinition } from './ZoneDefinition';
 import type { ExhibitEntry } from './data/zoneExhibits';
+import { ZoneExhibitShowcase } from './components/ZoneExhibitShowcase';
 
 const ENTRY_DURATION = 0.78;
 const SETTLE_DURATION = 0.62;
 interface Transition { readonly from: CameraState; readonly to: CameraState; readonly duration: number; elapsed: number; readonly complete?: () => void }
-interface ExhibitHotspot {
-  readonly root: Group;
-  readonly core: Mesh<SphereGeometry, MeshStandardMaterial>;
-  readonly rings: readonly Mesh<RingGeometry, MeshBasicMaterial>[];
-  readonly available: boolean;
-  readonly phase: number;
-  hovered: boolean;
-}
 
 export interface ZoneExhibitReturnContext {
   readonly zoneId: ZoneDefinition['id'];
@@ -36,9 +28,7 @@ export class ZoneViewer {
   private readonly materials: Material[] = [];
   private readonly textures: CanvasTexture[] = [];
   private readonly circulationRings: Group[] = [];
-  private readonly exhibitDisplays: Group[] = [];
-  private readonly exhibitHotspots: ExhibitHotspot[] = [];
-  private readonly exhibitSpace = new Group();
+  private readonly exhibitShowcase: ZoneExhibitShowcase;
   private readonly waterParticles: Points;
   private readonly panel: HTMLElement;
   private readonly title: HTMLElement;
@@ -46,8 +36,6 @@ export class ZoneViewer {
   private readonly description: HTMLElement;
   private readonly returnButton: HTMLButtonElement;
   private readonly statusMessage: HTMLElement;
-  private readonly raycastManager: RaycastManager;
-  private readonly exhibitTargets: Mesh[] = [];
   private transition: Transition | null = null;
   private showroomState: CameraState | null = null;
   private currentDefinition: ZoneDefinition | null = null;
@@ -79,24 +67,13 @@ export class ZoneViewer {
     if (!button) throw new Error('Zone return button was not created.');
     this.returnButton = button;
     this.returnButton.addEventListener('click', this.exit);
-    this.waterParticles = this.createWaterEnvironment();
-    this.raycastManager = new RaycastManager({
+    this.exhibitShowcase = new ZoneExhibitShowcase({
       camera: this.camera.camera,
       canvas: this.canvas,
-      getTargets: () => this.viewMode.mode === ViewMode.ZONE && !this.transition && !this.suspendedContext ? this.exhibitTargets : [],
-      onHover: (target) => {
-        const hotspot = target?.userData.hotspot as ExhibitHotspot | undefined;
-        this.exhibitHotspots.forEach((candidate) => {
-          if (candidate === hotspot) this.onPointerOver(candidate);
-          else this.onPointerOut(candidate);
-        });
-        this.canvas.classList.toggle('is-zone-exhibit-hovered', target !== null);
-      },
-      onClick: (target) => {
-        const exhibit = target.userData.exhibit as ExhibitEntry | undefined;
-        if (exhibit) this.handleExhibitClick(exhibit);
-      },
+      isInteractive: () => this.group.visible && this.viewMode.mode === ViewMode.ZONE && !this.transition && !this.suspendedContext,
+      onSelect: (exhibit) => this.handleExhibitClick(exhibit),
     });
+    this.waterParticles = this.createWaterEnvironment();
   }
 
   public enter(definition: ZoneDefinition, hotspotPosition: Vector3): boolean {
@@ -117,7 +94,7 @@ export class ZoneViewer {
       exhibitCount: definition.exhibits.length,
       exhibits: definition.exhibits,
     });
-    this.renderExhibitSpace(definition);
+    this.exhibitShowcase.setEntries(definition.exhibits);
     this.panel.classList.add('is-visible');
     this.panel.setAttribute('aria-hidden', 'false');
 
@@ -185,21 +162,7 @@ export class ZoneViewer {
         ring.rotation.z += delta * (index % 2 === 0 ? 0.16 : -0.11);
         ring.position.y = 3.1 + Math.sin(this.elapsed * 0.7 + index) * 0.12;
       });
-      this.exhibitDisplays.forEach((display, index) => {
-        display.rotation.y += delta * (0.08 + index * 0.015);
-      });
-      this.exhibitHotspots.forEach((hotspot) => {
-        const pulse = (Math.sin(this.elapsed * 2.8 + hotspot.phase) + 1) * 0.5;
-        const hoverScale = hotspot.hovered ? 1.34 : 1;
-        hotspot.root.scale.setScalar(hoverScale * (0.94 + pulse * 0.1));
-        hotspot.root.quaternion.copy(this.camera.camera.quaternion);
-        hotspot.rings[0].rotation.z += delta * 0.75;
-        hotspot.rings[1].rotation.z -= delta * 0.48;
-        hotspot.rings.forEach((ring, index) => {
-          ring.material.opacity = (hotspot.hovered ? 0.96 : 0.48) + pulse * (index === 0 ? 0.18 : 0.1);
-        });
-        hotspot.core.material.emissiveIntensity = (hotspot.hovered ? 3.2 : 1.65) + pulse * 0.75;
-      });
+      this.exhibitShowcase.update(delta);
       this.waterParticles.rotation.y += delta * 0.055;
       this.waterParticles.position.y = Math.sin(this.elapsed * 0.55) * 0.08;
     }
@@ -213,8 +176,7 @@ export class ZoneViewer {
 
   public dispose(): void {
     this.returnButton.removeEventListener('click', this.exit);
-    this.raycastManager.dispose();
-    this.canvas.classList.remove('is-zone-exhibit-hovered');
+    this.exhibitShowcase.dispose();
     if (this.statusMessageTimer !== null) window.clearTimeout(this.statusMessageTimer);
     this.panel.remove();
     this.geometries.forEach((item) => item.dispose());
@@ -258,7 +220,7 @@ export class ZoneViewer {
 
     this.createMonitoringWall(new Vector3(8.8, 4.3, -48.5), -0.2);
     this.createMonitoringWall(new Vector3(-8.8, 4.3, -48.5), 0.2);
-    this.group.add(this.exhibitSpace);
+    this.group.add(this.exhibitShowcase.group);
 
     const positions: number[] = [];
     for (let i = 0; i < 620; i += 1) {
@@ -295,92 +257,6 @@ export class ZoneViewer {
     base.position.set(position.x, 0.12, position.z + 1); this.group.add(base);
   }
 
-  /** Builds lightweight physical displays; full exhibit models stay exclusively in ExhibitViewer. */
-  private renderExhibitSpace(definition: ZoneDefinition): void {
-    this.exhibitSpace.clear();
-    this.exhibitDisplays.length = 0;
-    this.exhibitHotspots.length = 0;
-    this.exhibitTargets.length = 0;
-    definition.exhibits.forEach((exhibit, index) => {
-      const marker = new Group(); marker.name = `Exhibit showcase ${index + 1}`;
-      marker.position.set(...exhibit.previewPosition);
-      const available = exhibit.status === 'available' && exhibit.viewerId !== null;
-      const plinth = new Mesh(this.geometry(new CylinderGeometry(1.6, 1.85, 0.42, 48)), this.material(new MeshPhysicalMaterial({ color: available ? '#176b7b' : '#124754', emissive: available ? '#0a7890' : '#073d49', emissiveIntensity: 0.42, metalness: 0.65, roughness: 0.28, clearcoat: 0.7 })));
-      plinth.position.y = 0.21;
-      const display = this.createPhysicalPlaceholder(index, available);
-      display.position.y = 0.42;
-      this.exhibitDisplays.push(display);
-      const hotspot = this.createExhibitHotspot(exhibit, index, available);
-      marker.add(plinth, display, hotspot.root, this.createExhibitLabel(
-        exhibit.previewLabel,
-        available ? '点击热点进入展项' : '展项预留',
-        index,
-      ));
-      this.exhibitSpace.add(marker);
-    });
-  }
-
-  private createExhibitHotspot(exhibit: ExhibitEntry, index: number, available: boolean): ExhibitHotspot {
-    const root = new Group();
-    root.name = `Exhibit hotspot: ${exhibit.id}`;
-    root.position.set(0, 3.15, 0.35);
-    const color = available ? '#9af7ff' : '#4fabb8';
-    const core = new Mesh(
-      this.geometry(new SphereGeometry(0.2, 20, 14)),
-      this.material(new MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 1.65, roughness: 0.15, metalness: 0.25 })),
-    );
-    const rings = [0.42, 0.62].map((radius) => new Mesh(
-      this.geometry(new RingGeometry(radius - 0.025, radius + 0.025, 48)),
-      this.material(new MeshBasicMaterial({ color, transparent: true, opacity: 0.5, side: DoubleSide, depthWrite: false, blending: AdditiveBlending })),
-    ));
-    rings[1].rotation.z = Math.PI / 4;
-
-    // A generous, invisible sphere makes both the bright core and scan rings easy
-    // to acquire without making the visible hotspot oversized.
-    const target = new Mesh(
-      this.geometry(new SphereGeometry(0.72, 12, 8)),
-      this.material(new MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })),
-    );
-    const hotspot: ExhibitHotspot = { root, core, rings, available, phase: index * 1.7, hovered: false };
-    target.userData.exhibit = exhibit;
-    target.userData.hotspot = hotspot;
-    root.add(...rings, core, target);
-    this.exhibitHotspots.push(hotspot);
-    this.exhibitTargets.push(target);
-    return hotspot;
-  }
-
-  private onPointerOver(hotspot: ExhibitHotspot): void {
-    if (hotspot.hovered) return;
-    hotspot.hovered = true;
-  }
-
-  private onPointerOut(hotspot: ExhibitHotspot): void {
-    if (!hotspot.hovered) return;
-    hotspot.hovered = false;
-  }
-
-  private createPhysicalPlaceholder(index: number, available: boolean): Group {
-    const display = new Group();
-    const material = this.material(new MeshStandardMaterial({ color: available ? '#a9e7e9' : '#5f8f96', emissive: available ? '#176f79' : '#163e45', emissiveIntensity: 0.32, metalness: 0.72, roughness: 0.3, transparent: !available, opacity: available ? 1 : 0.58 }));
-    if (index === 0) {
-      const body = new Mesh(this.geometry(new CylinderGeometry(0.62, 0.78, 1.65, 24)), material); body.position.y = 1.05;
-      const chamber = new Mesh(this.geometry(new CylinderGeometry(0.38, 0.48, 1.95, 20)), material); chamber.position.set(0.85, 1.18, 0.12);
-      const bridge = new Mesh(this.geometry(new BoxGeometry(0.95, 0.22, 0.28)), material); bridge.position.set(0.42, 1.55, 0.05);
-      display.add(body, chamber, bridge);
-    } else if (index === 1) {
-      for (const x of [-0.68, 0, 0.68]) {
-        const membrane = new Mesh(this.geometry(new CylinderGeometry(0.18, 0.18, 1.65, 16)), material); membrane.position.set(x, 1.18, 0); display.add(membrane);
-      }
-      const header = new Mesh(this.geometry(new BoxGeometry(1.75, 0.18, 0.34)), material); header.position.set(0, 1.95, 0); display.add(header);
-    } else {
-      const consoleBody = new Mesh(this.geometry(new BoxGeometry(1.65, 1.15, 0.52)), material); consoleBody.position.y = 1.05; consoleBody.rotation.x = -0.12;
-      const sensor = new Mesh(this.geometry(new CylinderGeometry(0.08, 0.08, 1.15, 12)), material); sensor.position.set(0.72, 2, 0);
-      const sensorHead = new Mesh(this.geometry(new OctahedronGeometry(0.25, 0)), material); sensorHead.position.set(0.72, 2.58, 0); display.add(consoleBody, sensor, sensorHead);
-    }
-    return display;
-  }
-
   private handleExhibitClick(exhibit: ExhibitEntry): void {
     if (this.viewMode.mode !== ViewMode.ZONE || this.transition || this.suspendedContext) return;
     if (exhibit.status === 'coming' || !exhibit.viewerId) {
@@ -408,8 +284,7 @@ export class ZoneViewer {
     this.group.visible = false;
     this.panel.classList.remove('is-visible');
     this.panel.setAttribute('aria-hidden', 'true');
-    this.canvas.classList.remove('is-zone-exhibit-hovered');
-    this.exhibitHotspots.forEach((hotspot) => this.onPointerOut(hotspot));
+    this.exhibitShowcase.clearHover();
     if (this.statusMessageTimer !== null) window.clearTimeout(this.statusMessageTimer);
     this.statusMessageTimer = null;
     this.statusMessage.classList.remove('is-visible');
@@ -427,19 +302,5 @@ export class ZoneViewer {
       this.statusMessage.classList.remove('is-visible');
       this.statusMessageTimer = null;
     }, 2200);
-  }
-
-  private createExhibitLabel(title: string, status: string, index: number): Mesh {
-    const canvas = document.createElement('canvas'); canvas.width = 720; canvas.height = 180;
-    const context = canvas.getContext('2d');
-    if (!context) throw new Error('Exhibit label canvas is unavailable.');
-    context.fillStyle = 'rgba(3,31,43,.82)'; context.fillRect(0, 0, 720, 180);
-    context.strokeStyle = index === 0 ? 'rgba(150,249,255,.85)' : 'rgba(83,210,229,.48)'; context.lineWidth = 3; context.strokeRect(3, 3, 714, 174);
-    context.fillStyle = '#8beefa'; context.font = '500 22px sans-serif'; context.fillText(`展项 0${index + 1}`, 30, 43);
-    context.fillStyle = index === 0 ? '#effeff' : '#9bdae2'; context.font = '500 29px sans-serif'; context.fillText(title, 30, 102);
-    context.fillStyle = '#54bdcc'; context.font = '18px sans-serif'; context.fillText(status, 30, 145);
-    const texture = new CanvasTexture(canvas); texture.colorSpace = SRGBColorSpace; this.textures.push(texture);
-    const label = new Mesh(this.geometry(new PlaneGeometry(5.4, 1.35)), this.material(new MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false })));
-    label.position.set(0, 1.1, 1.5); return label;
   }
 }

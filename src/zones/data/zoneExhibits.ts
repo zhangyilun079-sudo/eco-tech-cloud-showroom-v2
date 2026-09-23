@@ -4,6 +4,7 @@ import type { ShowroomZoneId } from '../../showroom/Showroom';
 
 export type ExhibitStatus = 'available' | 'coming';
 export type ExhibitPreviewType = 'interactive' | 'holographic';
+export type ExhibitShowcaseKind = 'mvr' | 'membrane' | 'monitoring' | 'generic';
 
 /** Catalog entry shared by zone exhibit spaces and exhibit-viewer routing. */
 export interface ExhibitEntry {
@@ -15,6 +16,8 @@ export interface ExhibitEntry {
   readonly status: ExhibitStatus;
   readonly previewType: ExhibitPreviewType;
   readonly viewerId: string | null;
+  /** Lightweight preview shape; absent/unknown kinds use a generic placeholder. */
+  readonly showcaseKind?: ExhibitShowcaseKind;
   /** Authored placement for the lightweight physical showcase. */
   readonly previewPosition: Vector3Tuple;
   /** Short label used by the in-scene exhibit signage. */
@@ -31,6 +34,7 @@ export const zone01Exhibits: readonly ExhibitEntry[] = [
     status: 'available',
     previewType: 'interactive',
     viewerId: mvrWastewaterTreatmentDefinition.id,
+    showcaseKind: 'mvr',
     previewPosition: [-7.2, 0, -42],
     previewLabel: '高盐有机废水 MVR',
   },
@@ -43,6 +47,7 @@ export const zone01Exhibits: readonly ExhibitEntry[] = [
     status: 'coming',
     previewType: 'holographic',
     viewerId: null,
+    showcaseKind: 'membrane',
     previewPosition: [0, 0, -45],
     previewLabel: '膜分离处理技术',
   },
@@ -55,6 +60,7 @@ export const zone01Exhibits: readonly ExhibitEntry[] = [
     status: 'coming',
     previewType: 'holographic',
     viewerId: null,
+    showcaseKind: 'monitoring',
     previewPosition: [7.2, 0, -42],
     previewLabel: '智慧水务监测技术',
   },
