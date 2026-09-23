@@ -5,7 +5,9 @@ import { ExhibitViewer, type ExhibitReturnMode } from '../exhibits/ExhibitViewer
 import { ExplosionController } from '../exhibits/explosion/ExplosionController';
 import { ComponentInteractionManager } from '../exhibits/components/ComponentInteractionManager';
 import { mvrWastewaterTreatmentDefinition } from '../exhibits/data/mvrWastewaterTreatment';
+import { rtoTreatmentDefinition } from '../exhibits/data/rtoTreatment';
 import { MvrWastewaterTreatmentModel } from '../exhibits/models/MvrWastewaterTreatmentModel';
+import { RtoTreatmentModel } from '../exhibits/models/rto/RtoTreatmentModel';
 import { ProcessController } from '../exhibits/process/ProcessController';
 import { TechnologyController } from '../exhibits/technology/TechnologyController';
 import { ExhibitModeMenu, type ExhibitNavigationMode } from '../exhibits/navigation/ExhibitModeMenu';
@@ -21,6 +23,12 @@ import { LightingRig } from './LightingRig';
 import { RendererManager } from './RendererManager';
 import { ViewMode, ViewModeState } from './ViewMode';
 
+interface ExhibitControllerSet {
+  readonly explosion: ExplosionController;
+  readonly process: ProcessController;
+  readonly technology: TechnologyController;
+}
+
 export class ShowroomApplication {
   private readonly scene = new Scene();
   private readonly renderer: RendererManager;
@@ -35,9 +43,10 @@ export class ShowroomApplication {
   private readonly viewMode = new ViewModeState();
   private readonly zoneManager = new ZoneManager(zoneDefinitions);
   private readonly zoneViewer: ZoneViewer;
-  private readonly explosionController: ExplosionController;
-  private readonly processController: ProcessController;
-  private readonly technologyController: TechnologyController;
+  private explosionController!: ExplosionController;
+  private processController!: ProcessController;
+  private technologyController!: TechnologyController;
+  private readonly exhibitControllers = new Map<string, ExhibitControllerSet>();
   private readonly modeMenu: ExhibitModeMenu;
   private readonly resourceManager = new ExhibitResourceManager();
   private readonly clock = new Clock();
@@ -47,8 +56,9 @@ export class ShowroomApplication {
     this.renderer = new RendererManager(container);
     this.camera = new CameraController(this.renderer.renderer.domElement);
     const mvrExhibit = new MvrWastewaterTreatmentModel(mvrWastewaterTreatmentDefinition);
+    const rtoExhibit = new RtoTreatmentModel(rtoTreatmentDefinition);
     this.exhibits.register(mvrExhibit);
-    this.explosionController = new ExplosionController(mvrExhibit.object, mvrExhibit.metadata);
+    this.exhibits.register(rtoExhibit);
     this.infoPanel = new InfoPanel(container, {
       onResetView: () => this.camera.reset(),
       onToggleProcess: () => this.toggleProcessMode(),
@@ -56,33 +66,16 @@ export class ShowroomApplication {
       onNextProcessStep: () => this.processController.next(),
       onToggleProcessAutoPlay: () => this.processController.toggleAutoPlay(),
     });
-    this.processController = new ProcessController(
-      mvrExhibit.object,
-      mvrExhibit.metadata,
-      this.viewMode,
-      (step) => this.infoPanel.showProcessStep(step),
-      (active) => {
-        this.infoPanel.setProcessMode(active);
-        this.modeMenu?.setMode(active ? 'process' : null);
-      },
-      (active) => this.infoPanel.setProcessAutoPlaying(active),
-    );
     this.componentInteractions = new ComponentInteractionManager(
       this.camera.camera,
       this.renderer.renderer.domElement,
       this.infoPanel,
     );
-    this.technologyController = new TechnologyController(
-      container,
-      mvrExhibit.object,
-      mvrExhibit.metadata,
-      this.viewMode,
-      (active) => {
-        this.infoPanel.setTechnologyMode(active);
-        this.modeMenu?.setMode(active ? 'technology' : null);
-      },
-    );
     this.modeMenu = new ExhibitModeMenu(container, (mode) => this.selectExhibitMode(mode));
+    for (const exhibit of [mvrExhibit, rtoExhibit]) {
+      this.exhibitControllers.set(exhibit.metadata.id, this.createControllerSet(exhibit));
+    }
+    this.activateControllerSet(mvrExhibit.metadata.id);
     this.zoneViewer = new ZoneViewer(
       container,
       this.camera,
@@ -104,6 +97,7 @@ export class ShowroomApplication {
         return () => {
           const origin = this.zoneViewer.exhibitReturnContext;
           if (!origin || !this.exhibitViewer.enter(exhibit, position, origin.showroomCameraState)) return false;
+          this.activateControllerSet(exhibit.metadata.id);
           this.hotspots.setEnabled(false);
           this.componentInteractions.activate(exhibit);
           this.modeMenu.setMode(null);
@@ -176,8 +170,11 @@ export class ShowroomApplication {
     if (this.animationFrameId !== null) cancelAnimationFrame(this.animationFrameId);
     window.removeEventListener('resize', this.handleResize);
     this.showroom.dispose();
-    this.processController.dispose();
-    this.technologyController.dispose();
+    this.exhibitControllers.forEach((controllers) => {
+      controllers.process.dispose();
+      controllers.technology.dispose();
+    });
+    this.exhibitControllers.clear();
     this.modeMenu.dispose();
     this.resourceManager.dispose();
     this.exhibits.dispose();
@@ -217,6 +214,41 @@ export class ShowroomApplication {
     this.renderer.renderer.render(this.scene, this.camera.camera);
     this.animationFrameId = requestAnimationFrame(this.animate);
   };
+
+  private createControllerSet(exhibit: import('../exhibits/Exhibit').Exhibit): ExhibitControllerSet {
+    return {
+      explosion: new ExplosionController(exhibit.object, exhibit.metadata),
+      process: new ProcessController(
+        exhibit.object,
+        exhibit.metadata,
+        this.viewMode,
+        (step) => this.infoPanel.showProcessStep(step),
+        (active) => {
+          this.infoPanel.setProcessMode(active);
+          this.modeMenu.setMode(active ? 'process' : null);
+        },
+        (active) => this.infoPanel.setProcessAutoPlaying(active),
+      ),
+      technology: new TechnologyController(
+        this.container,
+        exhibit.object,
+        exhibit.metadata,
+        this.viewMode,
+        (active) => {
+          this.infoPanel.setTechnologyMode(active);
+          this.modeMenu.setMode(active ? 'technology' : null);
+        },
+      ),
+    };
+  }
+
+  private activateControllerSet(exhibitId: string): void {
+    const controllers = this.exhibitControllers.get(exhibitId);
+    if (!controllers) throw new Error(`Missing controllers for exhibit: ${exhibitId}`);
+    this.explosionController = controllers.explosion;
+    this.processController = controllers.process;
+    this.technologyController = controllers.technology;
+  }
 
   private exitExhibitMode(destination: ExhibitReturnMode = ViewMode.SHOWROOM): void {
     if (!this.exhibitViewer.canExit) return;
