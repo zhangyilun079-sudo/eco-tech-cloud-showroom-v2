@@ -92,6 +92,12 @@ export class ExhibitViewer {
         || this.viewMode.mode === ViewMode.PROCESS || this.viewMode.mode === ViewMode.TECHNOLOGY);
   }
 
+  public get isAnimating(): boolean {
+    const constraints = this.activeExhibit?.object.userData.viewerConstraints as ViewerConstraints | undefined;
+    return this.transition !== null
+      || (this.activeExhibit !== null && this.pointerId === null && constraints?.autoRotate !== false);
+  }
+
   public exit(returnTarget?: ExhibitReturnTarget): boolean {
     if (!this.canExit || !this.showroomCameraState) return false;
     const destination = returnTarget ?? { mode: ViewMode.SHOWROOM, cameraState: this.showroomCameraState };
