@@ -46,6 +46,7 @@ export class RtoTreatmentModel implements Exhibit {
     this.createThermalBed('thermal-bed-a', -2.2, 'A');
     this.createThermalBed('thermal-bed-b', 0, 'B');
     this.createThermalBed('thermal-bed-c', 2.2, 'C');
+    this.createBedHoppers();
     this.createCombustionChamber();
     this.createBurner();
     this.createBlowerFan();
@@ -88,6 +89,27 @@ export class RtoTreatmentModel implements Exhibit {
     this.box(group, [1.62, 0.45, 1.7], this.refractory, [x, 4.35, 0]);
     const plate = this.box(group, [0.58, 0.32, 0.045], this.darkSteel, [x, 4.41, 1.035]);
     plate.name = `BED ${designation}`;
+
+    // Dense, exposed ceramic channels make this a technical section rather
+    // than three closed cabinets.
+    for (let column = -6; column <= 6; column += 1) {
+      for (let row = 0; row < 5; row += 1) {
+        this.box(group, [0.035, 0.035, 0.08], this.refractory, [x + column * 0.105, 1.42 + row * 0.58, 0.9]);
+      }
+    }
+  }
+
+  private createBedHoppers(): void {
+    const group = this.component('bed-distribution-plenums');
+    for (const x of [-2.2, 0, 2.2]) {
+      const hopper = new Mesh(this.geometry(new ConeGeometry(0.88, 0.62, 4, 1, true)), this.steel);
+      hopper.position.set(x, 0.66, 0);
+      hopper.rotation.y = Math.PI / 4;
+      hopper.scale.z = 1.12;
+      hopper.castShadow = true;
+      group.add(hopper);
+      this.cylinder(group, 0.23, 0.48, this.darkSteel, [x, 0.28, 0]);
+    }
   }
 
   private createCombustionChamber(): void {
@@ -103,6 +125,13 @@ export class RtoTreatmentModel implements Exhibit {
     for (const x of [-2.2, 0, 2.2]) {
       this.box(group, [1.65, 0.08, 1.78], this.darkSteel, [x, 4.78, 0]);
       for (const offset of [-0.55, 0, 0.55]) this.box(group, [0.08, 0.28, 1.7], this.refractory, [x + offset, 4.92, 0]);
+    }
+    // Refractory baffles and roof ribs visible in the open front section.
+    for (const x of [-2.72, -1.82, -0.92, 0, 0.92, 1.82, 2.72]) {
+      this.box(group, [0.07, 0.82, 1.82], this.refractory, [x, 5.55, -0.04]);
+    }
+    for (const x of [-2.75, -1.65, -0.55, 0.55, 1.65, 2.75]) {
+      this.box(group, [0.08, 0.22, 2.2], this.darkSteel, [x, 6.27, 0]);
     }
   }
 
@@ -169,6 +198,15 @@ export class RtoTreatmentModel implements Exhibit {
         group.add(wheel);
         this.pipeSegment(group, 0.13, material, [x, 0.73, z], [x, 0.73, z > 0 ? 0.98 : -0.98]);
       }
+      // Yellow purge line has its own actuator and branch for every bed.
+      this.pipeSegment(group, 0.1, this.yellowPipe, [x, 0.43, 0.62], [x, 0.43, -0.62]);
+      const purgeValve = this.cylinder(group, 0.18, 0.38, this.valveMetal, [x, 0.43, 0]);
+      purgeValve.rotation.x = Math.PI / 2;
+      const purgeWheel = new Mesh(wheelGeometry, this.yellowPipe);
+      purgeWheel.scale.setScalar(0.72);
+      purgeWheel.position.set(x, 0.78, 0);
+      purgeWheel.rotation.x = Math.PI / 2;
+      group.add(purgeWheel);
     }
   }
 
@@ -184,6 +222,7 @@ export class RtoTreatmentModel implements Exhibit {
     const yellowRoutes: readonly Point[][] = [
       [[-5.8, 1.9, -0.15], [-5.8, 1.9, 0.45], [-4.38, 1.9, 0.45]],
       [[-3.9, 5.1, 0.66], [-3.9, 4.72, 0.66], [-2.95, 4.72, 0.66]],
+      [[-3.25, 0.43, 0], [3.25, 0.43, 0]],
     ];
     redRoutes.forEach((route) => this.pipeRoute(group, route, 0.16, this.redPipe));
     purpleRoutes.forEach((route) => this.pipeRoute(group, route, 0.17, this.purplePipe));
@@ -218,6 +257,17 @@ export class RtoTreatmentModel implements Exhibit {
     }
     this.box(group, [6.65, 0.11, 0.11], this.darkSteel, [0, 6.02, 1.1]);
     this.box(group, [6.65, 0.11, 0.11], this.darkSteel, [0, 6.02, -1.1]);
+    // Front maintenance platform, guard rail and access ladder shown with the
+    // support steelwork in the process drawing.
+    this.box(group, [7.05, 0.1, 0.72], this.darkSteel, [0, 4.72, 1.38]);
+    for (const x of [-3.35, -2.2, -1.1, 0, 1.1, 2.2, 3.35]) {
+      this.box(group, [0.055, 0.8, 0.055], this.darkSteel, [x, 5.12, 1.68]);
+    }
+    this.box(group, [6.75, 0.055, 0.055], this.darkSteel, [0, 5.48, 1.68]);
+    for (let rung = 0; rung < 11; rung += 1) {
+      this.box(group, [0.72, 0.045, 0.045], this.darkSteel, [3.72, 0.55 + rung * 0.38, 1.58]);
+    }
+    for (const x of [3.38, 4.06]) this.box(group, [0.055, 4.25, 0.055], this.darkSteel, [x, 2.45, 1.58]);
   }
 
   private component(id: string): Group {
