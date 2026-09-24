@@ -21,6 +21,7 @@ import { CameraController } from './CameraController';
 import { AnimationScheduler } from './AnimationScheduler';
 import { LightingRig } from './LightingRig';
 import { RendererManager } from './RendererManager';
+import { RuntimeProfiler } from './RuntimeProfiler';
 import { ViewMode, ViewModeState } from './ViewMode';
 
 interface ExhibitControllerSet {
@@ -52,6 +53,7 @@ export class ShowroomApplication {
   private readonly resourceManager = new ExhibitResourceManager();
   private readonly clock = new Clock();
   private readonly animationScheduler = new AnimationScheduler();
+  private readonly runtimeProfiler: RuntimeProfiler;
   private animationFrameId: number | null = null;
 
   public constructor(private readonly container: HTMLElement) {
@@ -156,6 +158,18 @@ export class ShowroomApplication {
       this.hotspots.group,
       this.zoneViewer.group,
     );
+    this.runtimeProfiler = new RuntimeProfiler({
+      renderer: this.renderer.renderer,
+      scene: this.scene,
+      hotspots: this.hotspots.group,
+      modules: {
+        showroom: this.showroom.group,
+        zoneViewer: this.zoneViewer.group,
+        exhibits: this.exhibits.group,
+        hotspots: this.hotspots.group,
+      },
+      getAnimationObjects: () => this.animationScheduler.getActiveTaskIds(),
+    });
 
     window.addEventListener('resize', this.handleResize);
     this.configureAnimationScheduler();
@@ -184,6 +198,7 @@ export class ShowroomApplication {
     this.infoPanel.dispose();
     this.camera.dispose();
     this.animationScheduler.clear();
+    this.runtimeProfiler.dispose();
     this.renderer.dispose();
   }
 
@@ -196,9 +211,9 @@ export class ShowroomApplication {
 
   private readonly animate = (): void => {
     const delta = Math.min(this.clock.getDelta(), 0.1);
-    this.animationScheduler.update(delta);
+    this.animationScheduler.update(delta, this.runtimeProfiler.animationsEnabled);
     this.renderer.renderer.render(this.scene, this.camera.camera);
-    this.renderer.reportInfo(this.clock.elapsedTime);
+    this.runtimeProfiler.update();
     this.animationFrameId = requestAnimationFrame(this.animate);
   };
 
