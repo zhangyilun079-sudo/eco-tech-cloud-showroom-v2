@@ -8,6 +8,15 @@ import type { ExhibitShowcase } from './ExhibitShowcase';
 const TRANSITION_DURATION = 0.85;
 const AUTO_ROTATION_SPEED = 0.16;
 
+interface ViewerConstraints {
+  readonly heroRotationY?: number;
+  readonly minRotationY?: number;
+  readonly maxRotationY?: number;
+  readonly minRotationX?: number;
+  readonly maxRotationX?: number;
+  readonly autoRotate?: boolean;
+}
+
 interface Transition {
   readonly from: CameraState;
   readonly to: CameraState;
@@ -60,7 +69,8 @@ export class ExhibitViewer {
     this.activeExhibit = exhibit;
     this.onExhibitModeChange(true);
     exhibit.object.position.copy(position);
-    exhibit.object.rotation.set(0, -0.25, 0);
+    const constraints = exhibit.object.userData.viewerConstraints as ViewerConstraints | undefined;
+    exhibit.object.rotation.set(0, constraints?.heroRotationY ?? -0.25, 0);
     exhibit.object.visible = true;
     this.showcase.showAt(position);
     const bounds = new Box3().setFromObject(exhibit.object);
@@ -106,7 +116,8 @@ export class ExhibitViewer {
   }
 
   public update(deltaSeconds: number): void {
-    if (this.activeExhibit && this.pointerId === null) {
+    const constraints = this.activeExhibit?.object.userData.viewerConstraints as ViewerConstraints | undefined;
+    if (this.activeExhibit && this.pointerId === null && constraints?.autoRotate !== false) {
       this.activeExhibit.object.rotation.y += AUTO_ROTATION_SPEED * deltaSeconds;
     }
     if (!this.transition) return;
@@ -148,11 +159,16 @@ export class ExhibitViewer {
     if (event.pointerId !== this.pointerId || !this.activeExhibit) return;
     const deltaX = event.clientX - this.pointerPosition.x;
     const deltaY = event.clientY - this.pointerPosition.y;
-    this.activeExhibit.object.rotation.y += deltaX * 0.009;
+    const constraints = this.activeExhibit.object.userData.viewerConstraints as ViewerConstraints | undefined;
+    this.activeExhibit.object.rotation.y = MathUtils.clamp(
+      this.activeExhibit.object.rotation.y + deltaX * 0.009,
+      constraints?.minRotationY ?? -Infinity,
+      constraints?.maxRotationY ?? Infinity,
+    );
     this.activeExhibit.object.rotation.x = MathUtils.clamp(
       this.activeExhibit.object.rotation.x + deltaY * 0.005,
-      -0.3,
-      0.3,
+      constraints?.minRotationX ?? -0.3,
+      constraints?.maxRotationX ?? 0.3,
     );
     this.pointerPosition.set(event.clientX, event.clientY);
   };
