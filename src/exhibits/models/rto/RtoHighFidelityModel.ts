@@ -67,18 +67,6 @@ const createLabel = (
   return addMesh(new Group(), new PlaneGeometry(width, height), material, position);
 };
 
-const addLabel = (
-  parent: Group,
-  text: string,
-  width: number,
-  height: number,
-  position: readonly [number, number, number],
-  fontSize?: number,
-): void => {
-  const label = createLabel(text, width, height, position, fontSize);
-  parent.add(...label.parent?.children ?? [label]);
-};
-
 const createInstrument = (text: string, position: readonly [number, number, number], size = 0.48): Mesh => {
   const canvas = document.createElement('canvas');
   canvas.width = 256;
