@@ -1,19 +1,9 @@
-# RTO source image asset
+# RTO source reference
 
-The current RTO exhibit uses the user's original exhibit image as the verified front-view texture for a **real multi-part 3D relief reconstruction**.
+`rto-three-bed-reference.png` is the user-supplied exhibit image used as the strict **front-view design reference** for the reconstructed three-bed RTO.
 
-Runtime source:
+The runtime exhibit is no longer a flat image or image extrusion. It is built from real Three.js volumes in:
 
-`public/assets/images/rto-three-bed-reference.png`
+`src/exhibits/models/rto/RtoHighFidelityModel.ts`
 
-The loader:
-- samples the image,
-- removes only border-connected white background,
-- partitions visible pixels into semantic components,
-- builds separate front surfaces plus real side/depth geometry,
-- keeps those component groups addressable for hotspots and exploded-view motion,
-- allows limited rotation so the visitor can see real parallax and depth.
-
-This is not a flat billboard. The original image remains the front-view truth because only one source view is currently available; unseen back surfaces are intentionally treated as inferred.
-
-When a verified original 3D model becomes available, switch the asset provider from `reference-relief` to `real-gltf` without rewriting Viewer, Zone, hotspot, process, or navigation code.
+The source image remains in the repository only for visual QA and future replacement work. When a verified original CAD/GLTF asset becomes available, it can replace the reconstructed asset without changing showroom navigation.
