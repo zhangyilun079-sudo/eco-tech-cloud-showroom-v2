@@ -1,15 +1,19 @@
-# RTO reference image asset
+# RTO source image asset
 
-The current RTO exhibit is intentionally driven by the user's original exhibit image rather than guessed 3D geometry.
+The current RTO exhibit uses the user's original exhibit image as the verified front-view texture for a **real multi-part 3D relief reconstruction**.
 
-Deploy the unchanged source image at:
+Runtime source:
 
 `public/assets/images/rto-three-bed-reference.png`
 
-The runtime URL is:
+The loader:
+- samples the image,
+- removes only border-connected white background,
+- partitions visible pixels into semantic components,
+- builds separate front surfaces plus real side/depth geometry,
+- keeps those component groups addressable for hotspots and exploded-view motion,
+- allows limited rotation so the visitor can see real parallax and depth.
 
-`/assets/images/rto-three-bed-reference.png`
+This is not a flat billboard. The original image remains the front-view truth because only one source view is currently available; unseen back surfaces are intentionally treated as inferred.
 
-Do not substitute a redrawn or simplified RTO image. Viewer and ZONE_04 use the same asset provider so their default appearance stays identical.
-
-When a verified original 3D model is supplied later, switch the RTO asset provider from `reference-image` to `real-gltf` without rewriting Viewer, Zone, hotspot, or navigation code.
+When a verified original 3D model becomes available, switch the asset provider from `reference-relief` to `real-gltf` without rewriting Viewer, Zone, hotspot, process, or navigation code.
