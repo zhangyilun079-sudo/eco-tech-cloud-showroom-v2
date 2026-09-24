@@ -92,11 +92,6 @@ const createInstrument = (text: string, position: readonly [number, number, numb
   return addMesh(new Group(), new PlaneGeometry(size, size), material, position);
 };
 
-const addInstrument = (parent: Group, text: string, position: readonly [number, number, number], size?: number): void => {
-  const marker = createInstrument(text, position, size);
-  parent.add(...marker.parent?.children ?? [marker]);
-};
-
 const createCeramicTexture = (): CanvasTexture => {
   const canvas = document.createElement('canvas');
   canvas.width = 256;
