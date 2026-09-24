@@ -1,6 +1,6 @@
 import {
   BoxGeometry, BufferGeometry, CanvasTexture, CatmullRomCurve3, ConeGeometry,
-  CylinderGeometry, DoubleSide, ExtrudeGeometry, Group, MathUtils, Mesh,
+  CylinderGeometry, DoubleSide, ExtrudeGeometry, Float32BufferAttribute, Group, Mesh,
   MeshBasicMaterial, MeshPhysicalMaterial, MeshStandardMaterial, PlaneGeometry,
   PointLight, Shape, SphereGeometry, SRGBColorSpace, TorusGeometry, TubeGeometry,
   Vector3,
