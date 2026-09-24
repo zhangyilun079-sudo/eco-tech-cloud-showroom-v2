@@ -41,6 +41,10 @@ export class ComponentHotspot {
           material.transparent = true;
           material.needsUpdate = true;
         }
+        if (entry.mesh.userData.rtoReliefFront && material instanceof MeshBasicMaterial) {
+          material.color.set(hovered ? '#c8ffdf' : '#ffffff');
+          material.needsUpdate = true;
+        }
       });
     }
   }
