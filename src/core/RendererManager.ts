@@ -26,6 +26,11 @@ export class RendererManager {
     this.renderer.setSize(width, height, false);
   }
 
+  /** Returns the effective state; this renderer currently has no postprocess pass. */
+  public setPostprocessingEnabled(_enabled: boolean): boolean {
+    return false;
+  }
+
   public dispose(): void {
     this.renderer.dispose();
     this.renderer.domElement.remove();
