@@ -1,5 +1,27 @@
 import type { ExhibitComponentDefinition, ExhibitDefinition, ExhibitVector3 } from '../ExhibitDefinition';
 
+/**
+ * A deliberately compact exploded-view profile for the RTO exhibit.
+ *
+ * These values are local-space offsets (the RTO part groups are assembled at
+ * the origin), kept at roughly 35–50% of the previous lateral/vertical travel.
+ * Depth is tighter still so parts remain readable without moving toward or
+ * away from the camera far enough to leave the main view.
+ */
+const rtoExplosionProfile = {
+  'thermal-bed-a': { x: -1.35, y: 0, z: 0 },
+  'thermal-bed-b': { x: 0, y: 0, z: 0.65 },
+  'thermal-bed-c': { x: 1.35, y: 0, z: 0 },
+  'combustion-chamber': { x: 0, y: 0.9, z: 0 },
+  burner: { x: -2.05, y: 0.6, z: 0 },
+  'blower-fan': { x: -2.5, y: 0, z: 0.65 },
+  'heat-exchanger': { x: -2.45, y: 0.55, z: -0.5 },
+  'valve-manifold': { x: 0, y: -0.18, z: 0.8 },
+  'pipeline-network': { x: 0, y: 1.05, z: -0.7 },
+  'exhaust-stack': { x: 2.5, y: 0.25, z: -0.45 },
+  'frame-support': { x: 0, y: 0, z: -1.15 },
+} as const satisfies Record<string, ExhibitVector3>;
+
 const component = (
   id: string,
   title: string,
@@ -87,16 +109,16 @@ export const rtoTreatmentDefinition = {
     },
   ],
   components: [
-    component('thermal-bed-a', '蓄热床 A', '进气预热 / 周期换向', '陶瓷蓄热体在进气周期释放热量，将有机废气预热至接近氧化温度。', ['陶瓷蓄热介质', '保温床体', '周期换向运行'], { x: -0.25, y: 3.35, z: 0.85 }, { x: -3.8, y: 0, z: 0 }),
-    component('thermal-bed-b', '蓄热床 B', '排气蓄热 / 周期换向', '吸收净化高温气体的显热并储存，为下一进气周期提供预热能量。', ['高比表面积填料', '高温余热回收', '低压降气流通道'], { x: 1.65, y: 3.35, z: 0.85 }, { x: 0, y: 0, z: 2.7 }),
-    component('thermal-bed-c', '蓄热床 C', '吹扫缓冲 / 周期换向', '在床层切换前进行净化气吹扫，降低残留有机废气直接进入排气侧的风险。', ['独立吹扫状态', '三床连续运行', '降低切换排放波动'], { x: 3.55, y: 3.35, z: 0.85 }, { x: 3.8, y: 0, z: 0 }),
-    component('combustion-chamber', '顶部燃烧室', '高温氧化反应', '横跨三座蓄热床的保温反应室，为 VOCs 氧化提供稳定温度与停留空间。', ['一体式顶部腔体', '耐火保温内衬', '均匀气流组织'], { x: 1.95, y: 5.45, z: 0.4 }, { x: 0, y: 2.3, z: 0 }, 0.8),
-    component('burner', '燃烧器', '启炉与温度补偿', '在启动或废气热值不足时提供补充热量，维持燃烧室反应条件。', ['自动比例调节', '火焰监测', '安全联锁'], { x: 2.05, y: 5.7, z: 0.65 }, { x: -5.2, y: 1.5, z: 0 }, 0.65),
-    component('blower-fan', '左侧离心风机', '废气输送与系统压差维持', '为废气克服换热器、管路、阀门和蓄热床阻力提供稳定动力。', ['离心叶轮可见', '减振基座', '流量调节'], { x: -4.1, y: 1.0, z: 0.3 }, { x: -6.5, y: 0, z: 2.8 }, 0.8),
-    component('heat-exchanger', '前置热交换器', '进气预换热', '回收可利用热量并稳定进入 RTO 的废气温度，内部换热管束以剖面形式展示。', ['多管束换热', '检修式壳体', '热量回收接口'], { x: -2.45, y: 2.85, z: 0.4 }, { x: -6.4, y: 1.5, z: -1.8 }, 0.8),
-    component('valve-manifold', '底部切换阀组', '进排气换向控制', '通过六组联锁阀门周期切换三座床体的进气、排气和吹扫状态。', ['六阀联锁', '快速密封切换', '检修隔离设计'], { x: 1.65, y: 0.95, z: 0.35 }, { x: 0, y: -0.45, z: 3.2 }, 0.9),
-    component('pipeline-network', '三色工艺管网', '工艺气体输送', '红色进气、紫色净化气与黄色辅助管线连接风机、阀组、三座床体及烟囱。', ['红色进气总管', '紫色出气总管', '黄色辅助管路'], { x: 0.0, y: 1.2, z: 0.55 }, { x: 0, y: 2.8, z: -2.7 }, 1.15),
-    component('exhaust-stack', '净化气排气筒', '净化气高位排放', '汇集完成氧化和热回收的净化气体，并通过独立排气筒排放。', ['独立竖向烟囱', '顶部防雨帽', '法兰检修段'], { x: -4.45, y: 3.4, z: -0.25 }, { x: 6.4, y: 0.7, z: -1.5 }, 0.8),
-    component('frame-support', '钢制框架支撑', '设备承载与检修支撑', '承载床体、燃烧室及管线，并保持剖开展示所需的结构稳定感。', ['型钢底座', '立柱横梁', '模块化承载'], { x: 1.95, y: 1.2, z: -0.25 }, { x: 0, y: 0, z: -3.2 }, 0.8),
+    component('thermal-bed-a', '蓄热床 A', '进气预热 / 周期换向', '陶瓷蓄热体在进气周期释放热量，将有机废气预热至接近氧化温度。', ['陶瓷蓄热介质', '保温床体', '周期换向运行'], { x: -0.25, y: 3.35, z: 0.85 }, rtoExplosionProfile['thermal-bed-a']),
+    component('thermal-bed-b', '蓄热床 B', '排气蓄热 / 周期换向', '吸收净化高温气体的显热并储存，为下一进气周期提供预热能量。', ['高比表面积填料', '高温余热回收', '低压降气流通道'], { x: 1.65, y: 3.35, z: 0.85 }, rtoExplosionProfile['thermal-bed-b']),
+    component('thermal-bed-c', '蓄热床 C', '吹扫缓冲 / 周期换向', '在床层切换前进行净化气吹扫，降低残留有机废气直接进入排气侧的风险。', ['独立吹扫状态', '三床连续运行', '降低切换排放波动'], { x: 3.55, y: 3.35, z: 0.85 }, rtoExplosionProfile['thermal-bed-c']),
+    component('combustion-chamber', '顶部燃烧室', '高温氧化反应', '横跨三座蓄热床的保温反应室，为 VOCs 氧化提供稳定温度与停留空间。', ['一体式顶部腔体', '耐火保温内衬', '均匀气流组织'], { x: 1.95, y: 5.45, z: 0.4 }, rtoExplosionProfile['combustion-chamber'], 0.8),
+    component('burner', '燃烧器', '启炉与温度补偿', '在启动或废气热值不足时提供补充热量，维持燃烧室反应条件。', ['自动比例调节', '火焰监测', '安全联锁'], { x: 2.05, y: 5.7, z: 0.65 }, rtoExplosionProfile.burner, 0.65),
+    component('blower-fan', '左侧离心风机', '废气输送与系统压差维持', '为废气克服换热器、管路、阀门和蓄热床阻力提供稳定动力。', ['离心叶轮可见', '减振基座', '流量调节'], { x: -4.1, y: 1.0, z: 0.3 }, rtoExplosionProfile['blower-fan'], 0.8),
+    component('heat-exchanger', '前置热交换器', '进气预换热', '回收可利用热量并稳定进入 RTO 的废气温度，内部换热管束以剖面形式展示。', ['多管束换热', '检修式壳体', '热量回收接口'], { x: -2.45, y: 2.85, z: 0.4 }, rtoExplosionProfile['heat-exchanger'], 0.8),
+    component('valve-manifold', '底部切换阀组', '进排气换向控制', '通过六组联锁阀门周期切换三座床体的进气、排气和吹扫状态。', ['六阀联锁', '快速密封切换', '检修隔离设计'], { x: 1.65, y: 0.95, z: 0.35 }, rtoExplosionProfile['valve-manifold'], 0.9),
+    component('pipeline-network', '三色工艺管网', '工艺气体输送', '红色进气、紫色净化气与黄色辅助管线连接风机、阀组、三座床体及烟囱。', ['红色进气总管', '紫色出气总管', '黄色辅助管路'], { x: 0.0, y: 1.2, z: 0.55 }, rtoExplosionProfile['pipeline-network'], 1.15),
+    component('exhaust-stack', '净化气排气筒', '净化气高位排放', '汇集完成氧化和热回收的净化气体，并通过独立排气筒排放。', ['独立竖向烟囱', '顶部防雨帽', '法兰检修段'], { x: -4.45, y: 3.4, z: -0.25 }, rtoExplosionProfile['exhaust-stack'], 0.8),
+    component('frame-support', '钢制框架支撑', '设备承载与检修支撑', '承载床体、燃烧室及管线，并保持剖开展示所需的结构稳定感。', ['型钢底座', '立柱横梁', '模块化承载'], { x: 1.95, y: 1.2, z: -0.25 }, rtoExplosionProfile['frame-support'], 0.8),
   ],
 } as const satisfies ExhibitDefinition;
