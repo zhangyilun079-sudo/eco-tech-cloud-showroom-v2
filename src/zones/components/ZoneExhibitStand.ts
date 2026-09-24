@@ -104,7 +104,10 @@ export class ZoneExhibitStand {
   private createHotspot(available: boolean): StandHotspot {
     const root = new Group();
     root.name = `Exhibit hotspot: ${this.entry.id}`;
-    root.position.set(0, 3.15, 0.35);
+    const isZone04 = this.entry.zoneId === 'ZONE_04';
+    // ZONE_04 is entered from +X. Keep its picker in front of the equipment,
+    // rather than behind the rotated cutaway where it cannot be seen or hit.
+    root.position.set(isZone04 ? 4.9 : 0, isZone04 ? 2.45 : 3.15, isZone04 ? 0 : 0.35);
     const color = available ? '#9af7ff' : '#4fabb8';
     const core = new Mesh(
       this.geometry(new SphereGeometry(0.2, 20, 14)),
@@ -181,7 +184,13 @@ export class ZoneExhibitStand {
     const isZone01Mvr = this.entry.zoneId === 'ZONE_01' && this.entry.showcaseKind === 'mvr';
     const label = new Mesh(this.geometry(new PlaneGeometry(isZone01Mvr ? 4.6 : 5.4, isZone01Mvr ? 1.15 : 1.35)), this.material(new MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false })));
     // The MVR sign sits low and forward, leaving the complete equipment body unobscured.
-    label.position.set(0, isZone01Mvr ? 0.72 : 1.1, isZone01Mvr ? 2.75 : 1.5); return label;
+    if (this.entry.zoneId === 'ZONE_04') {
+      label.position.set(this.entry.showcaseKind === 'rto' ? 5.25 : 2.15, 1.05, 0);
+      label.rotation.y = Math.PI / 2;
+    } else {
+      label.position.set(0, isZone01Mvr ? 0.72 : 1.1, isZone01Mvr ? 2.75 : 1.5);
+    }
+    return label;
   }
 
   private createMvrLighting(): Group {

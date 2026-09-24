@@ -81,6 +81,32 @@ export const zone04Exhibits: readonly ExhibitEntry[] = [
     previewPosition: [126, 0, -42],
     previewLabel: '三床式 RTO 废气处理系统',
   },
+  {
+    id: 'ZONE04_RESERVED_01',
+    zoneId: 'ZONE_04',
+    name: '预留展位',
+    category: '大气环境治理',
+    description: '为后续大气治理技术展品预留。',
+    status: 'coming',
+    previewType: 'holographic',
+    viewerId: null,
+    showcaseKind: 'generic',
+    previewPosition: [122, 0, -34.5],
+    previewLabel: '预留展位 · 即将开放',
+  },
+  {
+    id: 'ZONE04_RESERVED_02',
+    zoneId: 'ZONE_04',
+    name: '预留展位',
+    category: '大气环境治理',
+    description: '为后续大气治理技术展品预留。',
+    status: 'coming',
+    previewType: 'holographic',
+    viewerId: null,
+    showcaseKind: 'generic',
+    previewPosition: [122, 0, -49.5],
+    previewLabel: '预留展位 · 即将开放',
+  },
 ] as const;
 
 export const zoneExhibits: readonly ExhibitEntry[] = [...zone01Exhibits, ...zone04Exhibits];
