@@ -26,7 +26,7 @@ const component = (
   },
 });
 
-/** Phase 8.5 semantic data retained independently from the replaceable master GLB. */
+/** Phase 8.5 semantic data retained independently from the replaceable visual asset provider. */
 export const rtoTreatmentDefinition = {
   id: 'three-bed-rto-treatment-system',
   title: '三床式 RTO 废气处理系统',
