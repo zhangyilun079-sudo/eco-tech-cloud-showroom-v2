@@ -166,14 +166,14 @@ export class ZoneViewer {
     this.unloadZoneContent();
   }
 
-  public update(delta: number): void {
+  public update(delta: number, hotspotAnimationsEnabled = true): void {
     if (this.group.visible) {
       this.elapsed += delta;
       this.circulationRings.forEach((ring, index) => {
         ring.rotation.z += delta * (index % 2 === 0 ? 0.16 : -0.11);
         ring.position.y = 3.1 + Math.sin(this.elapsed * 0.7 + index) * 0.12;
       });
-      this.exhibitShowcase.update(delta);
+      this.exhibitShowcase.update(delta, hotspotAnimationsEnabled);
       if (this.waterParticles) {
         this.waterParticles.rotation.y += delta * 0.055;
         this.waterParticles.position.y = Math.sin(this.elapsed * 0.55) * 0.08;

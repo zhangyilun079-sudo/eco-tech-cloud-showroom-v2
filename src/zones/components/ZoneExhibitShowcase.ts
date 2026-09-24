@@ -62,9 +62,10 @@ export class ZoneExhibitShowcase {
 
   public clearHover(): void { this.setHovered(null); }
 
-  public update(delta: number): void {
+  public update(delta: number, animationsEnabled = true): void {
     if (this.disposed || !this.group.visible) return;
     if (!this.canInteract) this.clearHover();
+    if (!animationsEnabled) return;
     this.elapsed += delta;
     this.stands.forEach((stand) => stand.update(delta, this.elapsed, this.options.camera));
   }

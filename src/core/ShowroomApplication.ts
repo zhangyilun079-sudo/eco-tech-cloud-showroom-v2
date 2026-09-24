@@ -168,7 +168,11 @@ export class ShowroomApplication {
         exhibits: this.exhibits.group,
         hotspots: this.hotspots.group,
       },
-      getAnimationObjects: () => this.animationScheduler.getActiveTaskIds(),
+      getAnimationObjects: () => this.animationScheduler.getActiveTaskIds(
+        this.runtimeProfiler.animationsEnabled,
+        this.runtimeProfiler.hotspotsEnabled,
+      ),
+      setPostprocessingEnabled: (enabled) => this.renderer.setPostprocessingEnabled(enabled),
     });
 
     window.addEventListener('resize', this.handleResize);
@@ -211,7 +215,12 @@ export class ShowroomApplication {
 
   private readonly animate = (): void => {
     const delta = Math.min(this.clock.getDelta(), 0.1);
-    this.animationScheduler.update(delta, this.runtimeProfiler.animationsEnabled);
+    this.runtimeProfiler.applyFeatureToggles();
+    this.animationScheduler.update(
+      delta,
+      this.runtimeProfiler.animationsEnabled,
+      this.runtimeProfiler.hotspotsEnabled,
+    );
     this.renderer.renderer.render(this.scene, this.camera.camera);
     this.runtimeProfiler.update();
     this.animationFrameId = requestAnimationFrame(this.animate);
@@ -219,27 +228,31 @@ export class ShowroomApplication {
 
   private configureAnimationScheduler(): void {
     this.animationScheduler.add({
-      id: 'camera', isActive: () => this.camera.needsUpdate, update: () => this.camera.update(),
+      id: 'camera', essential: true, isActive: () => this.camera.needsUpdate, update: () => this.camera.update(),
     });
     this.animationScheduler.add({
       id: 'showroom', isActive: () => this.viewMode.mode === ViewMode.SHOWROOM,
       update: (delta) => this.showroom.update(delta),
     });
     this.animationScheduler.add({
-      id: 'hotspots', isActive: () => this.viewMode.mode === ViewMode.SHOWROOM,
+      id: 'hotspots', feature: 'hotspots', isActive: () => this.viewMode.mode === ViewMode.SHOWROOM,
       update: (delta) => this.hotspots.update(delta),
     });
     this.animationScheduler.add({
       id: 'zone-viewer', isActive: () => this.viewMode.mode === ViewMode.ZONE,
-      update: (delta) => this.zoneViewer.update(delta),
+      update: (delta) => this.zoneViewer.update(delta, this.runtimeProfiler.hotspotsEnabled),
     });
     this.animationScheduler.add({
-      id: 'exhibit-viewer', isActive: () => this.exhibitViewer.isAnimating,
+      id: 'exhibit-viewer', essential: true, isActive: () => this.exhibitViewer.isAnimating,
       update: (delta) => this.exhibitViewer.update(delta),
     });
     this.animationScheduler.add({
-      id: 'component-label', isActive: () => this.componentInteractions.needsLabelUpdate,
+      id: 'component-label', essential: true, isActive: () => this.componentInteractions.needsLabelUpdate,
       update: () => this.componentInteractions.update(),
+    });
+    this.animationScheduler.add({
+      id: 'exhibits', isActive: () => this.activeExhibitId !== null,
+      update: (delta) => this.exhibits.update(delta),
     });
     this.animationScheduler.add({
       id: 'explosion', isActive: () => this.explosionController?.isAnimating ?? false,
