@@ -2,7 +2,6 @@ import { ACESFilmicToneMapping, PCFSoftShadowMap, SRGBColorSpace, WebGLRenderer 
 
 export class RendererManager {
   public readonly renderer: WebGLRenderer;
-  private lastInfoReport = -Infinity;
 
   public constructor(container: HTMLElement) {
     this.renderer = new WebGLRenderer({
@@ -25,19 +24,6 @@ export class RendererManager {
 
   public resize(width: number, height: number): void {
     this.renderer.setSize(width, height, false);
-  }
-
-  /** Periodic, low-overhead visibility into the actual GPU workload. */
-  public reportInfo(elapsedSeconds: number): void {
-    if (elapsedSeconds - this.lastInfoReport < 5) return;
-    this.lastInfoReport = elapsedSeconds;
-    const { render, memory } = this.renderer.info;
-    console.info('[RendererInfo]', {
-      drawCalls: render.calls,
-      triangles: render.triangles,
-      textures: memory.textures,
-      geometries: memory.geometries,
-    });
   }
 
   public dispose(): void {

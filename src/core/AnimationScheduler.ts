@@ -13,10 +13,17 @@ export class AnimationScheduler {
     this.tasks.set(task.id, task);
   }
 
-  public update(deltaSeconds: number): void {
+  public update(deltaSeconds: number, animationsEnabled = true): void {
     for (const task of this.tasks.values()) {
+      // Camera and view-transition updates remain usable while scene animation is
+      // disabled for profiling.
+      if (!animationsEnabled && !['camera', 'exhibit-viewer', 'component-label'].includes(task.id)) continue;
       if (task.isActive()) task.update(deltaSeconds);
     }
+  }
+
+  public getActiveTaskIds(): string[] {
+    return [...this.tasks.values()].filter((task) => task.isActive()).map((task) => task.id);
   }
 
   public clear(): void { this.tasks.clear(); }
