@@ -104,7 +104,8 @@ export class ZoneExhibitStand {
   private createHotspot(available: boolean): StandHotspot {
     const root = new Group();
     root.name = `Exhibit hotspot: ${this.entry.id}`;
-    root.position.set(0, 3.15, 0.35);
+    const isRto = this.entry.zoneId === 'ZONE_04' && this.entry.showcaseKind === 'rto';
+    root.position.set(isRto ? 0 : 0, isRto ? 1.05 : 3.15, isRto ? 3.45 : 0.35);
     const color = available ? '#9af7ff' : '#4fabb8';
     const core = new Mesh(
       this.geometry(new SphereGeometry(0.2, 20, 14)),
@@ -144,8 +145,9 @@ export class ZoneExhibitStand {
       const frozenClone = this.frozenRtoSource.object.clone(true);
       frozenClone.name = 'Frozen RTO production model clone';
       frozenClone.visible = true;
-      frozenClone.scale.setScalar(0.82);
-      frozenClone.rotation.y = -Math.PI / 2;
+      // This is the production cutaway itself, frozen at the authored front view.
+      // Keeping its rotation at zero makes the zone exhibit and Viewer identical.
+      frozenClone.scale.setScalar(0.6);
       display.add(frozenClone);
       return display;
     }
@@ -179,9 +181,10 @@ export class ZoneExhibitStand {
     context.fillStyle = '#54bdcc'; context.font = '18px sans-serif'; context.fillText(available ? '点击热点进入展项' : '展项预留', 30, 145);
     const texture = new CanvasTexture(canvas); texture.colorSpace = SRGBColorSpace; this.textures.add(texture);
     const isZone01Mvr = this.entry.zoneId === 'ZONE_01' && this.entry.showcaseKind === 'mvr';
+    const isZone04Rto = this.entry.zoneId === 'ZONE_04' && this.entry.showcaseKind === 'rto';
     const label = new Mesh(this.geometry(new PlaneGeometry(isZone01Mvr ? 4.6 : 5.4, isZone01Mvr ? 1.15 : 1.35)), this.material(new MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false })));
     // The MVR sign sits low and forward, leaving the complete equipment body unobscured.
-    label.position.set(0, isZone01Mvr ? 0.72 : 1.1, isZone01Mvr ? 2.75 : 1.5); return label;
+    label.position.set(0, isZone01Mvr ? 0.72 : isZone04Rto ? 0.82 : 1.1, isZone01Mvr ? 2.75 : isZone04Rto ? 3.15 : 1.5); return label;
   }
 
   private createMvrLighting(): Group {
