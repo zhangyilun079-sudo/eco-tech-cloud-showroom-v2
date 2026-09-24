@@ -1,4 +1,4 @@
-import { Group, Material, Mesh, Texture, type Object3D } from 'three';
+import { Group, Material, Mesh, Texture } from 'three';
 import type { Exhibit } from '../../Exhibit';
 import type { ExhibitDefinition } from '../../ExhibitDefinition';
 import { createRtoHighFidelityModel } from './RtoHighFidelityModel';
