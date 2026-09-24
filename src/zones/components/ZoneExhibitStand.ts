@@ -2,13 +2,9 @@ import {
   AdditiveBlending, BoxGeometry, BufferGeometry, CanvasTexture, CylinderGeometry,
   DoubleSide, Group, Material, Mesh, MeshBasicMaterial, MeshPhysicalMaterial,
   MeshStandardMaterial, OctahedronGeometry, PlaneGeometry, PointLight, RingGeometry,
-  SphereGeometry, SpotLight, SRGBColorSpace,
+  SphereGeometry, SpotLight, SRGBColorSpace, TorusGeometry,
 } from 'three';
 import type { Camera } from 'three';
-import { mvrWastewaterTreatmentDefinition } from '../../exhibits/data/mvrWastewaterTreatment';
-import { MvrWastewaterTreatmentModel } from '../../exhibits/models/MvrWastewaterTreatmentModel';
-import { rtoTreatmentDefinition } from '../../exhibits/data/rtoTreatment';
-import { RtoTreatmentModel } from '../../exhibits/models/rto/RtoTreatmentModel';
 import type { ExhibitEntry, ExhibitShowcaseKind } from '../data/zoneExhibits';
 
 interface StandHotspot {
@@ -28,8 +24,6 @@ export class ZoneExhibitStand {
   private readonly textures = new Set<CanvasTexture>();
   private readonly display: Group;
   private readonly hotspot: StandHotspot;
-  private frozenMvrSource: MvrWastewaterTreatmentModel | null = null;
-  private frozenRtoSource: RtoTreatmentModel | null = null;
   private disposed = false;
 
   public constructor(public readonly entry: ExhibitEntry, private readonly index: number) {
@@ -83,13 +77,7 @@ export class ZoneExhibitStand {
     this.disposed = true;
     this.group.removeFromParent();
     this.group.clear();
-    // The clone shares its source instance's geometry and materials. Clear the
-    // scene graph first, then let the source retain sole disposal ownership.
-    this.frozenMvrSource?.dispose();
-    this.frozenMvrSource = null;
-    this.frozenRtoSource?.dispose();
-    this.frozenRtoSource = null;
-    // These resources belong only to this stand; never dispose frozen Viewer assets.
+    // Preview resources are independent from the full Viewer assets.
     this.geometries.forEach((item) => item.dispose());
     this.materials.forEach((item) => item.dispose());
     this.textures.forEach((item) => item.dispose());
@@ -131,26 +119,38 @@ export class ZoneExhibitStand {
   private createPhysicalPlaceholder(kind: ExhibitShowcaseKind, available: boolean): Group {
     const display = new Group();
     if (kind === 'mvr') {
-      this.frozenMvrSource = new MvrWastewaterTreatmentModel(mvrWastewaterTreatmentDefinition);
-      const frozenClone = this.frozenMvrSource.object.clone(true);
-      frozenClone.name = 'Frozen MVR production model clone';
-      frozenClone.visible = true;
-      // Preserve the complete plant silhouette while giving the lead exhibit
-      // enough visual weight to read immediately from the zone entrance.
-      frozenClone.scale.setScalar(0.56);
-      display.add(frozenClone);
+      display.name = 'Lightweight MVR preview';
+      const steel = this.material(new MeshPhysicalMaterial({ color: '#b9c4c2', roughness: 0.32, metalness: 0.78 }));
+      const frame = this.material(new MeshStandardMaterial({ color: '#29423f', roughness: 0.4, metalness: 0.72 }));
+      const blue = this.material(new MeshStandardMaterial({ color: '#287e8b', roughness: 0.32, metalness: 0.58 }));
+      const base = new Mesh(this.geometry(new BoxGeometry(3.5, 0.18, 1.8)), frame); base.position.y = 0.12; display.add(base);
+      for (const [x, height, radius] of [[0.45, 2.9, 0.48], [1.3, 2.05, 0.38]] as const) {
+        const vessel = new Mesh(this.geometry(new CylinderGeometry(radius, radius, height, 12)), steel);
+        vessel.position.set(x, height / 2 + 0.2, 0); display.add(vessel);
+      }
+      for (const y of [0.45, 1.7, 3.05]) {
+        const beam = new Mesh(this.geometry(new BoxGeometry(3.5, 0.09, 0.09)), frame); beam.position.set(0, y, -0.82); display.add(beam);
+      }
+      const exchanger = new Mesh(this.geometry(new CylinderGeometry(0.25, 0.25, 1.65, 10)), steel);
+      exchanger.rotation.z = Math.PI / 2; exchanger.position.set(-0.85, 1.05, 0); display.add(exchanger);
+      const pipe = new Mesh(this.geometry(new TorusGeometry(0.78, 0.06, 6, 18, Math.PI)), blue);
+      pipe.rotation.x = Math.PI / 2; pipe.position.set(0.2, 2.9, 0); display.add(pipe);
+      display.scale.setScalar(1.05);
       return display;
     }
     if (kind === 'rto') {
-      this.frozenRtoSource = new RtoTreatmentModel(rtoTreatmentDefinition);
-      const assetInstance = this.frozenRtoSource.object;
-      assetInstance.name = 'Frozen RTO production model clone';
-      assetInstance.visible = true;
-      // ZONE_04 is entered from +X looking toward -X. Turn the original front
-      // image toward that approach while keeping Viewer itself strictly front-on.
-      assetInstance.rotation.y = Math.PI / 2;
-      assetInstance.scale.setScalar(0.58);
-      display.add(assetInstance);
+      display.name = 'Lightweight RTO preview';
+      const shell = this.material(new MeshStandardMaterial({ color: '#d7d1c7', metalness: 0.48, roughness: 0.4 }));
+      const dark = this.material(new MeshStandardMaterial({ color: '#342a2b', metalness: 0.7, roughness: 0.34 }));
+      const heat = this.material(new MeshStandardMaterial({ color: '#d65b2c', emissive: '#7b1d0e', emissiveIntensity: 0.5 }));
+      for (const x of [-1.15, 0, 1.15]) {
+        const bed = new Mesh(this.geometry(new BoxGeometry(0.9, 2.45, 1.05)), shell); bed.position.set(x, 1.42, 0); display.add(bed);
+        const hopper = new Mesh(this.geometry(new CylinderGeometry(0.34, 0.5, 0.55, 4)), dark); hopper.position.set(x, 0.28, 0); hopper.rotation.y = Math.PI / 4; display.add(hopper);
+      }
+      const chamber = new Mesh(this.geometry(new BoxGeometry(3.55, 0.72, 1.08)), heat); chamber.position.set(0, 3.02, 0); display.add(chamber);
+      const stack = new Mesh(this.geometry(new CylinderGeometry(0.18, 0.22, 3.2, 12)), dark); stack.position.set(2.05, 1.8, 0); display.add(stack);
+      display.rotation.y = Math.PI / 2;
+      display.scale.setScalar(0.92);
       return display;
     }
 

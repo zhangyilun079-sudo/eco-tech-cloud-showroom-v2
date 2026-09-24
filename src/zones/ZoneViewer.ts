@@ -30,7 +30,8 @@ export class ZoneViewer {
   private readonly circulationRings: Group[] = [];
   private readonly airStreams: Group[] = [];
   private readonly exhibitShowcase: ZoneExhibitShowcase;
-  private readonly waterParticles: Points;
+  private waterParticles: Points | null = null;
+  private loadedZoneId: ZoneDefinition['id'] | null = null;
   private readonly panel: HTMLElement;
   private readonly title: HTMLElement;
   private readonly subtitle: HTMLElement;
@@ -74,13 +75,12 @@ export class ZoneViewer {
       isInteractive: () => this.group.visible && this.viewMode.mode === ViewMode.ZONE && !this.transition && !this.suspendedContext,
       onSelect: (exhibit) => this.handleExhibitClick(exhibit),
     });
-    this.waterParticles = this.createWaterEnvironment();
-    this.createAtmosphereEnvironment();
   }
 
   public enter(definition: ZoneDefinition, hotspotPosition: Vector3): boolean {
     if (!['ZONE_01', 'ZONE_04'].includes(definition.id) || this.viewMode.mode !== ViewMode.SHOWROOM) return false;
     this.currentDefinition = definition;
+    this.loadZoneContent(definition);
     this.suspendedContext = null;
     this.showroomState = this.camera.captureState();
     this.viewMode.set(ViewMode.ZONE);
@@ -129,6 +129,7 @@ export class ZoneViewer {
       this.showroomState = null;
       this.currentDefinition = null;
       this.suspendedContext = null;
+      this.unloadZoneContent();
       this.viewMode.set(ViewMode.SHOWROOM);
       this.camera.setNavigationEnabled(true);
       this.onReturn();
@@ -162,6 +163,7 @@ export class ZoneViewer {
     this.group.visible = false;
     this.panel.classList.remove('is-visible');
     this.panel.setAttribute('aria-hidden', 'true');
+    this.unloadZoneContent();
   }
 
   public update(delta: number): void {
@@ -172,8 +174,10 @@ export class ZoneViewer {
         ring.position.y = 3.1 + Math.sin(this.elapsed * 0.7 + index) * 0.12;
       });
       this.exhibitShowcase.update(delta);
-      this.waterParticles.rotation.y += delta * 0.055;
-      this.waterParticles.position.y = Math.sin(this.elapsed * 0.55) * 0.08;
+      if (this.waterParticles) {
+        this.waterParticles.rotation.y += delta * 0.055;
+        this.waterParticles.position.y = Math.sin(this.elapsed * 0.55) * 0.08;
+      }
       this.airStreams.forEach((stream, index) => {
         stream.position.x = 126 + Math.sin(this.elapsed * (0.45 + index * 0.04) + index) * 1.1;
         stream.rotation.y += delta * (index % 2 ? 0.08 : -0.06);
@@ -192,9 +196,7 @@ export class ZoneViewer {
     this.exhibitShowcase.dispose();
     if (this.statusMessageTimer !== null) window.clearTimeout(this.statusMessageTimer);
     this.panel.remove();
-    this.geometries.forEach((item) => item.dispose());
-    this.materials.forEach((item) => item.dispose());
-    this.textures.forEach((item) => item.dispose());
+    this.unloadZoneContent();
   }
 
   private begin(to: CameraState, duration: number, complete?: () => void): void {
@@ -203,6 +205,32 @@ export class ZoneViewer {
   private required(selector: string): HTMLElement { const element = this.panel.querySelector<HTMLElement>(selector); if (!element) throw new Error(`Missing zone UI: ${selector}`); return element; }
   private geometry<T extends BufferGeometry>(item: T): T { this.geometries.push(item); return item; }
   private material<T extends Material>(item: T): T { this.materials.push(item); return item; }
+
+  private loadZoneContent(definition: ZoneDefinition): void {
+    if (this.loadedZoneId === definition.id) return;
+    this.unloadZoneContent();
+    this.group.name = `${definition.id} ${definition.englishTitle}`;
+    this.group.add(this.exhibitShowcase.group);
+    if (definition.id === 'ZONE_01') this.waterParticles = this.createWaterEnvironment();
+    else this.createAtmosphereEnvironment();
+    this.loadedZoneId = definition.id;
+  }
+
+  /** Drop all zone-only GPU assets once the return transition no longer needs them. */
+  private unloadZoneContent(): void {
+    this.exhibitShowcase.clear();
+    this.group.clear();
+    this.geometries.forEach((item) => item.dispose());
+    this.materials.forEach((item) => item.dispose());
+    this.textures.forEach((item) => item.dispose());
+    this.geometries.length = 0;
+    this.materials.length = 0;
+    this.textures.length = 0;
+    this.circulationRings.length = 0;
+    this.airStreams.length = 0;
+    this.waterParticles = null;
+    this.loadedZoneId = null;
+  }
 
   private createWaterEnvironment(): Points {
     const origin = new Vector3(0, 0, -42);
@@ -233,8 +261,6 @@ export class ZoneViewer {
 
     this.createMonitoringWall(new Vector3(8.8, 4.3, -48.5), -0.2);
     this.createMonitoringWall(new Vector3(-8.8, 4.3, -48.5), 0.2);
-    this.group.add(this.exhibitShowcase.group);
-
     const positions: number[] = [];
     for (let i = 0; i < 620; i += 1) {
       const angle = i * 2.399; const radius = 2 + (i % 100) * 0.115;
