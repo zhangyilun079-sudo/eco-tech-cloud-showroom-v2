@@ -1,4 +1,4 @@
-import { Material, Mesh, MeshStandardMaterial, Object3D, Vector3 } from 'three';
+import { Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, Vector3 } from 'three';
 import type { ExhibitComponentDefinition } from '../ExhibitDefinition';
 
 /** Connects component metadata to its model objects and hover visualization. */
@@ -35,11 +35,21 @@ export class ComponentHotspot {
           material.emissive.set(hovered ? '#55dca0' : '#000000');
           material.emissiveIntensity = hovered ? 0.42 : 1;
         }
+        if (entry.mesh.userData.rtoReferenceRegion && material instanceof MeshBasicMaterial) {
+          material.color.set('#55dca0');
+          material.opacity = hovered ? 0.14 : 0;
+          material.transparent = true;
+          material.needsUpdate = true;
+        }
       });
     }
   }
 
   public getWorldAnchor(target: Vector3): Vector3 {
+    const imageAnchor = this.object.userData.componentLabelAnchor as { x: number; y: number; z: number } | undefined;
+    if (imageAnchor) {
+      return target.set(imageAnchor.x, imageAnchor.y, imageAnchor.z).applyMatrix4(this.object.matrixWorld);
+    }
     const position = this.definition.label.anchorPosition;
     // Component definitions use model-local coordinates. Applying the component's
     // own matrix makes the label follow it while the exploded view is in motion.
