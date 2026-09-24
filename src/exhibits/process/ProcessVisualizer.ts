@@ -78,6 +78,8 @@ export class ProcessVisualizer {
     }
   }
 
+  public get isAnimating(): boolean { return this.curve !== null; }
+
   public reset(): void {
     this.clearFlow();
     this.restoreMaterials();

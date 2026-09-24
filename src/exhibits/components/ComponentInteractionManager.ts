@@ -61,6 +61,8 @@ export class ComponentInteractionManager {
     );
   }
 
+  public get needsLabelUpdate(): boolean { return this.enabled && this.hovered !== null; }
+
   public dispose(): void {
     this.deactivate();
     this.raycastManager.dispose();

@@ -18,6 +18,7 @@ import { ZoneManager } from '../zones/ZoneManager';
 import { ZoneViewer } from '../zones/ZoneViewer';
 import { zoneDefinitions } from '../zones/data/zones';
 import { CameraController } from './CameraController';
+import { AnimationScheduler } from './AnimationScheduler';
 import { LightingRig } from './LightingRig';
 import { RendererManager } from './RendererManager';
 import { ViewMode, ViewModeState } from './ViewMode';
@@ -50,6 +51,7 @@ export class ShowroomApplication {
   private readonly exhibitFactory = new ExhibitFactory();
   private readonly resourceManager = new ExhibitResourceManager();
   private readonly clock = new Clock();
+  private readonly animationScheduler = new AnimationScheduler();
   private animationFrameId: number | null = null;
 
   public constructor(private readonly container: HTMLElement) {
@@ -156,6 +158,7 @@ export class ShowroomApplication {
     );
 
     window.addEventListener('resize', this.handleResize);
+    this.configureAnimationScheduler();
     this.handleResize();
   }
 
@@ -180,6 +183,7 @@ export class ShowroomApplication {
     this.exhibitViewer.dispose();
     this.infoPanel.dispose();
     this.camera.dispose();
+    this.animationScheduler.clear();
     this.renderer.dispose();
   }
 
@@ -192,23 +196,45 @@ export class ShowroomApplication {
 
   private readonly animate = (): void => {
     const delta = Math.min(this.clock.getDelta(), 0.1);
-    this.camera.update();
-    // Only advance mode-specific visuals while they can contribute a frame.
-    // The viewer still updates in every mode so camera enter/exit transitions finish.
-    if (this.viewMode.mode === ViewMode.SHOWROOM) {
-      this.showroom.update(delta);
-      this.hotspots.update(delta);
-    } else {
-      this.exhibits.update(delta);
-      this.componentInteractions.update();
-      if (this.viewMode.mode === ViewMode.PROCESS) this.processController?.update(delta);
-    }
-    if (this.viewMode.mode === ViewMode.ZONE) this.zoneViewer.update(delta);
-    this.exhibitViewer.update(delta);
-    this.explosionController?.update(delta);
+    this.animationScheduler.update(delta);
     this.renderer.renderer.render(this.scene, this.camera.camera);
+    this.renderer.reportInfo(this.clock.elapsedTime);
     this.animationFrameId = requestAnimationFrame(this.animate);
   };
+
+  private configureAnimationScheduler(): void {
+    this.animationScheduler.add({
+      id: 'camera', isActive: () => this.camera.needsUpdate, update: () => this.camera.update(),
+    });
+    this.animationScheduler.add({
+      id: 'showroom', isActive: () => this.viewMode.mode === ViewMode.SHOWROOM,
+      update: (delta) => this.showroom.update(delta),
+    });
+    this.animationScheduler.add({
+      id: 'hotspots', isActive: () => this.viewMode.mode === ViewMode.SHOWROOM,
+      update: (delta) => this.hotspots.update(delta),
+    });
+    this.animationScheduler.add({
+      id: 'zone-viewer', isActive: () => this.viewMode.mode === ViewMode.ZONE,
+      update: (delta) => this.zoneViewer.update(delta),
+    });
+    this.animationScheduler.add({
+      id: 'exhibit-viewer', isActive: () => this.exhibitViewer.isAnimating,
+      update: (delta) => this.exhibitViewer.update(delta),
+    });
+    this.animationScheduler.add({
+      id: 'component-label', isActive: () => this.componentInteractions.needsLabelUpdate,
+      update: () => this.componentInteractions.update(),
+    });
+    this.animationScheduler.add({
+      id: 'explosion', isActive: () => this.explosionController?.isAnimating ?? false,
+      update: (delta) => this.explosionController?.update(delta),
+    });
+    this.animationScheduler.add({
+      id: 'process', isActive: () => this.processController?.isAnimating ?? false,
+      update: (delta) => this.processController?.update(delta),
+    });
+  }
 
   private createControllerSet(exhibit: import('../exhibits/Exhibit').Exhibit): ExhibitControllerSet {
     return {

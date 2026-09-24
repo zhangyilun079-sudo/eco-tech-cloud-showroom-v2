@@ -10,6 +10,7 @@ interface ComponentTransform {
 
 /** Coordinates component transforms for the current and future exploded-view UI. */
 export class ExplosionController {
+  public get isAnimating(): boolean { return this.animation.isRunning; }
   private readonly animation = new ExplosionAnimation();
   private readonly transforms: readonly ComponentTransform[];
   private exploded = false;

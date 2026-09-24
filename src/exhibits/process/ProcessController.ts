@@ -65,6 +65,10 @@ export class ProcessController {
     if (this.autoElapsed >= AUTO_STEP_SECONDS) this.next();
   }
 
+  public get isAnimating(): boolean {
+    return this.viewMode.mode === ViewMode.PROCESS && (this.autoPlaying || this.visualizer.isAnimating);
+  }
+
   public dispose(): void { this.visualizer.dispose(); }
   public cleanupVisualization(): void { this.setAutoPlaying(false); this.visualizer.reset(); }
 

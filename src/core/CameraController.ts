@@ -20,6 +20,7 @@ export class CameraController {
   private readonly constrainedTarget = new Vector3();
   private readonly targetCorrection = new Vector3();
   private readonly canvas: HTMLCanvasElement;
+  private dirty = true;
   private readonly preventContextMenu = (event: MouseEvent): void => {
     event.preventDefault();
   };
@@ -46,6 +47,7 @@ export class CameraController {
     this.controls.mouseButtons.MIDDLE = MOUSE.DOLLY;
     this.controls.mouseButtons.RIGHT = MOUSE.PAN;
     this.canvas.addEventListener('contextmenu', this.preventContextMenu);
+    this.controls.addEventListener('change', this.handleControlsChange);
     this.controls.update();
   }
 
@@ -54,7 +56,10 @@ export class CameraController {
     this.camera.updateProjectionMatrix();
   }
 
+  public get needsUpdate(): boolean { return this.dirty && this.controls.enabled; }
+
   public update(): void {
+    this.dirty = false;
     this.controls.update();
     if (this.controls.enabled) this.constrainTargetToShowroom();
   }
@@ -81,8 +86,11 @@ export class CameraController {
 
   public dispose(): void {
     this.canvas.removeEventListener('contextmenu', this.preventContextMenu);
+    this.controls.removeEventListener('change', this.handleControlsChange);
     this.controls.dispose();
   }
+
+  private readonly handleControlsChange = (): void => { this.dirty = true; };
 
   private constrainTargetToShowroom(): void {
     this.constrainedTarget.copy(this.controls.target).clamp(MIN_TARGET, MAX_TARGET);

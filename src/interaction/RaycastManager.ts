@@ -14,6 +14,9 @@ export class RaycastManager {
   private readonly pointer = new Vector2();
   private readonly pointerDown = new Vector2();
   private readonly options: RaycastManagerOptions;
+  private readonly clickPosition = new Vector2();
+  private moveFrameId: number | null = null;
+  private latestMoveEvent: PointerEvent | null = null;
 
   public constructor(options: RaycastManagerOptions) {
     this.options = options;
@@ -29,11 +32,21 @@ export class RaycastManager {
     canvas.removeEventListener('pointerdown', this.handlePointerDown);
     canvas.removeEventListener('pointerup', this.handlePointerUp);
     canvas.removeEventListener('pointerleave', this.handlePointerLeave);
+    if (this.moveFrameId !== null) cancelAnimationFrame(this.moveFrameId);
   }
 
   private readonly handlePointerMove = (event: PointerEvent): void => {
-    this.updatePointer(event);
-    this.options.onHover(this.pick());
+    // Pointer events can arrive much faster than display refresh. Coalesce them
+    // so at most one raycast runs for a rendered frame.
+    this.latestMoveEvent = event;
+    if (this.moveFrameId !== null) return;
+    this.moveFrameId = requestAnimationFrame(() => {
+      this.moveFrameId = null;
+      if (!this.latestMoveEvent) return;
+      this.updatePointer(this.latestMoveEvent);
+      this.options.onHover(this.pick());
+      this.latestMoveEvent = null;
+    });
   };
 
   private readonly handlePointerDown = (event: PointerEvent): void => {
@@ -41,13 +54,15 @@ export class RaycastManager {
   };
 
   private readonly handlePointerUp = (event: PointerEvent): void => {
-    if (this.pointerDown.distanceTo(new Vector2(event.clientX, event.clientY)) > 5) return;
+    this.clickPosition.set(event.clientX, event.clientY);
+    if (this.pointerDown.distanceTo(this.clickPosition) > 5) return;
     this.updatePointer(event);
     const target = this.pick();
     if (target) this.options.onClick(target);
   };
 
   private readonly handlePointerLeave = (): void => {
+    this.latestMoveEvent = null;
     this.options.onHover(null);
   };
 
@@ -61,6 +76,7 @@ export class RaycastManager {
 
   private pick(): Object3D | null {
     this.raycaster.setFromCamera(this.pointer, this.options.camera);
-    return this.raycaster.intersectObjects([...this.options.getTargets()], false)[0]?.object ?? null;
+    // Three.js does not mutate this array despite its mutable parameter type.
+    return this.raycaster.intersectObjects(this.options.getTargets() as Object3D[], false)[0]?.object ?? null;
   }
 }
