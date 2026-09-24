@@ -1,4 +1,4 @@
-import { Group, Material, Mesh, Texture } from 'three';
+import { Group, Material, Mesh, Texture, type Object3D } from 'three';
 import type { Exhibit } from '../../Exhibit';
 import type { ExhibitDefinition } from '../../ExhibitDefinition';
 import { loadRtoAsset } from '../../loaders/loadRtoAsset';
@@ -44,7 +44,7 @@ export class RtoTreatmentModel implements Exhibit {
     this.object.clear();
   }
 
-  private disposeAsset(root: Group | import('three').Object3D): void {
+  private disposeAsset(root: Object3D): void {
     root.traverse((object) => {
       if (!(object instanceof Mesh)) return;
       object.geometry.dispose();
