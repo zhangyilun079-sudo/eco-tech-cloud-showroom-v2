@@ -1,4 +1,5 @@
 import { Material, Mesh, Object3D, Scene, WebGLRenderer } from 'three';
+import { auditShowroomRendering } from './ShowroomRenderingAudit';
 
 export interface PerformanceDebugFeatures {
   shadows: boolean;
@@ -18,6 +19,7 @@ interface RuntimeProfilerOptions {
   renderer: WebGLRenderer;
   scene: Scene;
   modules: Record<string, Object3D>;
+  showroom: Object3D;
   hotspots: Object3D;
   getAnimationObjects: () => readonly string[];
 }
@@ -119,6 +121,7 @@ export class RuntimeProfiler {
         materials: materials.size,
       },
       modules: { ...modules, animationObjects: activeAnimations.length },
+      showroomAudit: auditShowroomRendering(this.options.showroom),
       activeAnimations,
       features: { ...window.performanceDebugFeatures },
       toggleFpsChanges,

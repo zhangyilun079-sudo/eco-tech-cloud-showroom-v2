@@ -161,6 +161,7 @@ export class ShowroomApplication {
     this.runtimeProfiler = new RuntimeProfiler({
       renderer: this.renderer.renderer,
       scene: this.scene,
+      showroom: this.showroom.group,
       hotspots: this.hotspots.group,
       modules: {
         showroom: this.showroom.group,
